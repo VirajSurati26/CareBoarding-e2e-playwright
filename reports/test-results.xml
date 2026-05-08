@@ -1,0 +1,61 @@
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="1" time="56.962699">
+<testsuite name="e2e\TC.Employee.spec.ts" timestamp="2026-05-05T11:34:22.841Z" hostname="chromium" tests="1" failures="0" skipped="0" time="56.047" errors="1">
+<testcase name="Select employees module › Login and navigate to Employee search" classname="e2e\TC.Employee.spec.ts" time="56.047">
+<system-out>
+<![CDATA[Selected and opened employee: Emily R. John
+
+[[ATTACHMENT|..\test-results\e2e-TC.Employee-Select-emp-e60ca-navigate-to-Employee-search-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|..\test-results\e2e-TC.Employee-Select-emp-e60ca-navigate-to-Employee-search-chromium\video.webm]]
+
+[[ATTACHMENT|..\test-results\e2e-TC.Employee-Select-emp-e60ca-navigate-to-Employee-search-chromium\error-context.md]]
+]]>
+</system-out>
+<error message="locator.fill: Timeout 10000ms exceeded." type="TimeoutError">
+<![CDATA[  [chromium] › e2e\TC.Employee.spec.ts:15:7 › Select employees module › Login and navigate to Employee search 
+
+    TimeoutError: locator.fill: Timeout 10000ms exceeded.
+    Call log:
+      - waiting for locator('input[type="time"]').first()
+        - locator resolved to <input type="time" required="" id="mdl_in_time" name="mdl_in_time" class="form-control"/>
+        - fill("19:22")
+      - attempting fill action
+        2 × waiting for element to be visible, enabled and editable
+          - element is not visible
+        - retrying fill action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and editable
+          - element is not visible
+        - retrying fill action
+          - waiting 100ms
+        20 × waiting for element to be visible, enabled and editable
+           - element is not visible
+         - retrying fill action
+           - waiting 500ms
+
+
+       at ..\src\pageObjects\Employee.ts:69
+
+      67 |     
+      68 |     await this.page.waitForTimeout(1000);
+    > 69 |     await this.page.locator('input[type="time"]').first().fill(timeStr);
+         |                                                           ^
+      70 | } 
+      71 | }
+        at Employee.generateVisitAtRandomTime (C:\Users\Admin\CareBoarding_Playwright\src\pageObjects\Employee.ts:69:59)
+        at C:\Users\Admin\CareBoarding_Playwright\tests\e2e\TC.Employee.spec.ts:29:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\e2e-TC.Employee-Select-emp-e60ca-navigate-to-Employee-search-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\e2e-TC.Employee-Select-emp-e60ca-navigate-to-Employee-search-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\e2e-TC.Employee-Select-emp-e60ca-navigate-to-Employee-search-chromium\error-context.md
+]]>
+</error>
+</testcase>
+</testsuite>
+</testsuites>

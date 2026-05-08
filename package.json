@@ -1,0 +1,33 @@
+{
+  "name": "playwright-testing-framework",
+  "version": "1.0.0",
+  "description": "Modern Playwright testing framework with TypeScript",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report",
+    "test:install": "playwright install",
+    "test:e2e": "playwright test tests/e2e",
+    "test:integration": "playwright test tests/integration",
+    "test:unit": "playwright test tests/unit",
+    "test:ci": "playwright test --reporter=html --reporter=junit",
+    "lint": "eslint src tests --ext .ts",
+    "lint:fix": "eslint src tests --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"data/**/*.ts\" \"utils/**/*.ts\"",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": ["playwright", "testing", "automation", "typescript", "e2e"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "prettier": "^3.0.0"
+  }
+}
