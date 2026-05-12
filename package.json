@@ -18,16 +18,29 @@
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"data/**/*.ts\" \"utils/**/*.ts\"",
     "type-check": "tsc --noEmit"
   },
-  "keywords": ["playwright", "testing", "automation", "typescript", "e2e"],
+  "keywords": [
+    "playwright",
+    "testing",
+    "automation",
+    "typescript",
+    "e2e"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
-    "eslint": "^8.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "prettier": "^3.0.0"
+    "appium": "^3.4.2",
+    "appium-uiautomator2-driver": "^7.2.3",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0",
+    "webdriverio": "^9.27.1"
+  },
+  "dependencies": {
+    "@types/node-fetch": "^2.6.13",
+    "node-fetch": "^3.3.2"
   }
 }

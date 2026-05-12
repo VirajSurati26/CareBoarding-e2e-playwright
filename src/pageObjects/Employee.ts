@@ -47,26 +47,95 @@ async selectCurrentDate() {
     await this.page.locator(`text="${day}"`).first().click();
 }
 
-// Generate a visit at a random time
-async generateVisitAtRandomTime() {
-    await this.page.waitForTimeout(1000);
-    const hours = Math.floor(Math.random() * 14) + 6;
-    const minutes = Math.floor(Math.random() * 60);
-    const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-    
-    // Try to find and click a button or label to show time input
-    try {
-        await this.page.locator('text=Add Visit').first().click();
-    } catch (error) {
-        try {
-            await this.page.locator('text=Visit').first().click();
-        } catch (error2) {
-            // Continue
-        }
-    }
-    
-    await this.page.waitForTimeout(1000);
-    await this.page.locator('input[type="time"]').first().fill(timeStr);
-} 
+//=============Sucessfully Create the visit in pop-up message====================
 
+//--------------Generate a visit at a random time----------------------
+
+ async generateVisitAtRandomTime(): Promise<void> {
+
+  // Wait for page to stabilize after date selection
+  await this.page.waitForTimeout(2000);
+  
+  const startHour = Math.floor(Math.random() * 10) + 1;
+  const endHour = startHour + Math.floor(Math.random() * 4) + 1;
+  const start = `${startHour.toString().padStart(2, '0')}:00`;
+  const end = `${endHour.toString().padStart(2, '0')}:00`;
+    
+  // Fill the time input fields using specific name selectors for Schedule Information
+  const inTimeInput = this.page.locator('input[name="in_time"]');
+  const outTimeInput = this.page.locator('input[name="out_time"]');
+  
+  // Wait for the specific time fields to be visible
+  await inTimeInput.waitFor({ state: 'visible', timeout: 5000 });
+  await outTimeInput.waitFor({ state: 'visible', timeout: 5000 });
+  
+  // Fill the time fields
+  await inTimeInput.fill(start);
+  await outTimeInput.fill(end);
+  
+  console.log(`Filled In/Out Time with start: ${start}, end: ${end}`);
+}
+
+//------------Perform the Patients Select the Dropdown button----------------------
+
+// Patient dropdown selection by index
+async selectPatientByIndex(index: number, dropdownSelector?: string): Promise<string> {
+    await this.page.waitForTimeout(2000);
+    const selector = dropdownSelector || '#select2-patientIdVal-container';
+    await this.page.locator(selector).first().click();
+    await this.page.waitForTimeout(1000);
+    await this.page.locator('.select2-results__option').first().waitFor({ state: 'visible', timeout: 8000 });  
+    // Get the patient name before clicking
+    const patientName = await this.page.locator('.select2-results__option').nth(index).textContent();
+    await this.page.locator('.select2-results__option').nth(index).click();   
+    return patientName?.trim() || '';
+}
+
+//----------------Perform the Pay Rate the Dropdown button----------------------
+
+async selectPayRateByIndex(index: number): Promise<string> {
+    await this.page.locator('span[id*="select2-pay_rate"]').first().click();
+    const payRate = await this.page.locator('.select2-results__option').nth(index).textContent() || '';
+    await this.page.locator('.select2-results__option').nth(index).click();
+    return payRate;
+}
+
+//-------------Perform the POC Select the Dropdown button----------------------
+
+async selectPOCByIndex(index: number): Promise<string> {
+    await this.page.waitForTimeout(2000);
+    await this.page.locator('span[id*="select2-poc"]').first().click();
+    await this.page.locator('.select2-results__option').first().waitFor({ state: 'visible', timeout: 8000 });
+    const poc = await this.page.locator('.select2-results__option').nth(index).textContent() || '';
+    await this.page.locator('.select2-results__option').nth(index).click();
+    await this.page.waitForTimeout(2000);
+    return poc;
+}
+
+//-------------Perform the Service Code Select the in Dropdown button----------------------
+
+async selectServiceCodeByIndex(index: number): Promise<string> {
+   
+    await this.page.locator('span[id*="select2-service_code"]').first().click();
+    await this.page.locator('.select2-results__option').first().waitFor({ state: 'visible', timeout: 8000 });
+    const serviceCode = await this.page.locator('.select2-results__option').nth(index).textContent() || ''
+    await this.page.locator('.select2-results__option').nth(index).click();
+    await this.page.waitForTimeout(2000);
+    return serviceCode;
+}
+
+//---------------Perform the Create button Apply----------------------
+
+async clickCreateButton() {
+    await this.page.locator('#changeStatusFormSubBtn').click();
+}
+
+//---------------Perorm the "OK" button and Print the validation message ----------------------
+
+async clickOKButtonandPrintValidationMessage() {
+    await this.page.locator('.swal2-confirm').click();
+    const validationMessage = await this.page.locator('.swal2-html-container').textContent();
+    console.log('Validation Message:', validationMessage);
+}
+             
 }
