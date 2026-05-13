@@ -5,6 +5,13 @@ export const TEST_USERS = {
     firstName: 'John',
     lastName: 'Doe',
   },
+
+  MOBILE_USER: {
+    username: 'emily.johnson@yopmail.com',
+    password: '12345678',
+    firstName: 'Emily',
+    lastName: 'Johnson',
+  },
   
   // TODO: Add invalid user data here
   // INVALID_USER: {

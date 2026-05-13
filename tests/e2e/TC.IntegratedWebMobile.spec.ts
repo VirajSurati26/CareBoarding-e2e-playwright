@@ -9,6 +9,7 @@ import { MobileApp } from "@/pageObjects/MobileApp(Appium)";
 test.describe('Web to Mobile Visit Test', () => {
   let mobileApp: MobileApp;
 
+  //--------- Test Setup ---------//
   test.beforeEach(async ({ page }) => {
     const baseTest = new BaseTest(page);
     await baseTest.maximizeWindow();
@@ -61,7 +62,7 @@ test.describe('Web to Mobile Visit Test', () => {
       await mobileApp.connectDevice('emulator-5554');
       
       console.log('Mobile device connected, logging in...');
-      await mobileApp.login('emily.johnson@yopmail.com', '12345678');
+      await mobileApp.login(TEST_USERS.MOBILE_USER.username, TEST_USERS.MOBILE_USER.password);
       await mobileApp.goToVisits();
       await mobileApp.searchPatient(patientName);
       
