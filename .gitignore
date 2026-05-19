@@ -2,10 +2,11 @@
 /node_modules
 /package-lock.json
 
-# Test results and reports
+# Test results and reports  
 /test-results
 /reports
 /dist
+/Resources
 
 # Environment
 .env
