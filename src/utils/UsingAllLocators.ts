@@ -8,6 +8,26 @@ export const LOGIN_SELECTORS = {
   loginForm: 'form, .login-form, #login-form',
 };
 
+export const EMPLOYEE_SELECTORS = {
+  loadingOverlay: '.loading-overlay.is-active',
+  navLinkEmployees: 'a.nav-link',
+  searchEmployeeBtn: 'text=Search Employee',
+  employeeTableRow: 'table tbody tr',
+  calendarBtn: 'text=Calendar',
+  inTimeInput: 'input[name="in_time"]',
+  outTimeInput: 'input[name="out_time"]',
+  patientDropdown: '#select2-patientIdVal-container',
+  payRateDropdown: 'span[id*="select2-pay_rate"]',
+  pocDropdown: 'span[id*="select2-poc"]',
+  serviceCodeDropdown: 'span[id*="select2-service_code"]',
+  createButton: '#changeStatusFormSubBtn',
+  swalConfirm: '.swal2-confirm',
+  swalContainer: '.swal2-html-container',
+  select2ResultsOption: '.select2-results__option',
+  calendarDay: (day: number | string) => `text="${day}"`,
+  calendarTimeCell: '.fc-event, .fc-daygrid-event, .fc-event-title',
+};
+
 export const CHANGE_ENTITY_SELECTORS = {
   entityDropdown: '#select2-entity-container',
   entityOptions: '.select2-results__option',
@@ -102,6 +122,7 @@ export const LOCATOR_STRATEGIES = {
 // Export all locators as a single object for easy access
 export const ALL_LOCATORS = {
   LOGIN: LOGIN_SELECTORS,
+  EMPLOYEE: EMPLOYEE_SELECTORS,
   CHANGE_ENTITY: CHANGE_ENTITY_SELECTORS,
   MASTER_SCHEDULE: MASTER_SCHEDULE_SELECTORS,
   SELECT2: SELECT2_SELECTORS,

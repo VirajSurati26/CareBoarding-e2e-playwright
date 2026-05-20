@@ -1,28 +1,28 @@
 export const TEST_USERS = {
   VALID_USER: {
-    username: 'johnallen@yopmail.com',
-    password: '123456789123',
+    username: process.env.VALID_USER_USERNAME || 'johnallen@yopmail.com',
+    password: process.env.VALID_USER_PASSWORD || '123456789123',
     firstName: 'John',
     lastName: 'Doe',
   },
 
   MOBILE_USER: {
-    username: 'emily.johnson@yopmail.com',
-    password: '12345678',
+    username: process.env.MOBILE_USER_USERNAME || 'emily.johnson@yopmail.com',
+    password: process.env.MOBILE_USER_PASSWORD || '12345678',
     firstName: 'Emily',
     lastName: 'Johnson',
   },
-  
+
   // TODO: Add invalid user data here
   // INVALID_USER: {
-  //   username: 'invalid@example.com',
-  //   password: 'WrongPassword123!',
+  //   username: process.env.INVALID_USER_USERNAME || 'invalid@example.com',
+  //   password: process.env.INVALID_USER_PASSWORD || 'WrongPassword123!',
   // },
 
   // TODO: Add admin user data here
   ADMIN_USER: {
-    username: 'johnallen@yopmail.com',
-    password: '123456789123',
+    username: process.env.ADMIN_USER_USERNAME || 'johnallen@yopmail.com',
+    password: process.env.ADMIN_USER_PASSWORD || '123456789123',
     role: 'admin',
   },
 };
@@ -46,29 +46,29 @@ export const VALIDATION_MESSAGES = {
   INVALID_EMAIL: 'Please enter a valid email address',
   INVALID_PASSWORD: 'Password must be at least 8 characters',
   LOGIN_FAILED: 'Invalid username or password',
-  
+
   // Form Validation
   REQUIRED_FIELD: 'This field is required',
   INVALID_FORMAT: 'Invalid format',
   INVALID_DATE: 'Please enter a valid date',
   INVALID_TIME: 'Please enter a valid time',
-  
+
   // Success Messages
   SAVE_SUCCESS: 'Saved successfully',
   UPDATE_SUCCESS: 'Updated successfully',
   DELETE_SUCCESS: 'Deleted successfully',
-  
+
   // Error Messages
   NETWORK_ERROR: 'Network error occurred',
   SERVER_ERROR: 'Server error occurred',
   UNAUTHORIZED: 'Unauthorized access',
-  
+
   // Master Schedule Specific
   PATIENT_REQUIRED: 'Please select a patient',
   SHIFT_NAME_REQUIRED: 'Shift name is required',
   EMPLOYEE_REQUIRED: 'Please select an employee',
   INVALID_DATE_RANGE: 'End date must be after start date',
-  
+
   // Recurring Schedule Failures
   SCHEDULE_CREATION_FAILED: 'Failed to create recurring schedule',
   SCHEDULE_UPDATE_FAILED: 'Failed to update recurring schedule',
@@ -80,11 +80,11 @@ export const VALIDATION_MESSAGES = {
   SCHEDULE_NOT_FOUND: 'Recurring schedule not found',
   DUPLICATE_SCHEDULE: 'A schedule with these details already exists',
   VALIDATION_ERRORS: 'Please correct validation errors before proceeding',
-  
+
   // Time Validation (from ReusableMethod.ts)
   INVALID_TIME_FORMAT: 'Invalid time format',
   INVALID_24HOUR_FORMAT: 'Invalid 24-hour time format',
-  
+
   // General Validation
   SELECT_REQUIRED: 'Please select an option',
   FIELD_TOO_SHORT: 'Field is too short',

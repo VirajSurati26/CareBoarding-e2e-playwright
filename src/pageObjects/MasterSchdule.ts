@@ -2,6 +2,7 @@ import { Page } from '@playwright/test';
 import { pause } from 'webdriverio/build/commands/browser';
 import { generateRandomShiftName, selectCalendarDate, convertAmPmTo24Hour, generateRandomAmPmTime, isValidAmPmTime, scrollToBottom } from '../utils/ReusableMethod';
 import { threadId } from 'worker_threads';
+import { ALL_LOCATORS } from '../utils/UsingAllLocators';
 
 export class MasterSchedule {
   constructor(private page: Page) {}
@@ -13,8 +14,8 @@ export class MasterSchedule {
   }
 
   async selectPatientFieldsideMenu(patientName: string): Promise<void> {
-    await this.page.click(`text=${patientName}`);
-    await this.page.click('text=Recurring Schedule');
+    await this.page.click(ALL_LOCATORS.MASTER_SCHEDULE.patientName(patientName));
+    await this.page.click(ALL_LOCATORS.MASTER_SCHEDULE.recurringScheduleMenu);
   
   }
 
@@ -24,32 +25,32 @@ async selectFirstPatientAndSearch(): Promise<void> {
     await this.page.waitForLoadState('networkidle');
     
     // Click the "Select Patient" span element
-    await this.page.locator('span.select2-selection__rendered:has-text("Select Patient")').click();
+    await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.selectPatientSpan).click();
     
     // Wait for dropdown to open and fill the search input
-    await this.page.locator('input.select2-search__field').waitFor({ state: 'visible' });
-    await this.page.locator('input.select2-search__field').fill('Smith, John M. (TWI-000004)');
+    await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchInput).waitFor({ state: 'visible' });
+    await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchInput).fill('Smith, John M. (TWI-000004)');
     
     // Wait for results and click patient by index (0 = first, 1 = second, etc.)
-    await this.page.locator('.select2-results__option').first().waitFor({ state: 'visible' });
-    await this.page.locator('.select2-results__option').first().click(); 
+    await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchResult).first().waitFor({ state: 'visible' });
+    await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchResult).first().click(); 
     // Click the Search button
-    await this.page.locator('button:has-text("Search")').click();
+    await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.searchButton).click();
 
 }
     //==============Performed click on Add Recurring Schedule Button==============
 
     async AddRecurringScheduleButton(): Promise<void> {
  
-     await this.page.getByText('Add Recurring Schedule').click();
+     await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.addRecurringScheduleButton).click();
   
     }
 
     //===============Handle recurring period radio buttons with condition===============
 
     async RecurringPeriodbutton(): Promise<void> {
-    const weeklyOption = this.page.locator('text=Weekly');
-    const monthlyOption = this.page.locator('text=Monthly');
+    const weeklyOption = this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.weeklyOption);
+    const monthlyOption = this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.monthlyOption);
     
     // Wait for radio buttons to be visible
     await Promise.any([
@@ -71,7 +72,7 @@ async selectFirstPatientAndSearch(): Promise<void> {
     async EnterShiftName(): Promise<void> {
 
     const randomShiftName = generateRandomShiftName();
-    await this.page.locator('input[name="shift_name"]').fill(randomShiftName);
+    await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.shiftNameInput).fill(randomShiftName);
     }
 
     //===============Performed the Select the start date===============
@@ -82,7 +83,7 @@ async selectFirstPatientAndSearch(): Promise<void> {
      const dateStr = String(today.getMonth() + 1).padStart(2, '0') + '-' + 
                     String(today.getDate()).padStart(2, '0') + '-' + 
                     today.getFullYear();    
-     await this.page.locator('input[name="from_date"]').fill(dateStr);    
+     await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.startDateInput).fill(dateStr);    
   }   
 
 //============================Performed the Master Week Schedule=======================
@@ -98,8 +99,8 @@ async selectFirstPatientAndSearch(): Promise<void> {
   const end = `${endHour.toString().padStart(2, '0')}:00`;
 
   // Fill the time input fields for Master Week Schedule
-  await this.page.locator('input[type="time"]').first().fill(start);
-  await this.page.locator('input[type="time"]').nth(1).fill(end);
+  await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.timeInputs).first().fill(start);
+  await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.timeInputs).nth(1).fill(end);
 
   console.log(`Filled Master Week Schedule with start: ${start}, end: ${end}`);
 }
@@ -107,65 +108,65 @@ async selectFirstPatientAndSearch(): Promise<void> {
   //----------------Performed the select employee in Master Week Schedule-----------------
 
     async selectEmployeeFromDropdown(employeeName: string): Promise<void> {
-        await this.page.locator('select[name="is_whole_week_caregiver"] + .select2-container .select2-selection__rendered').click();
-        await this.page.locator('input.select2-search__field').waitFor({ state: 'visible' });
+        await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.employeeDropdown).click();
+        await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchInput).waitFor({ state: 'visible' });
          await this.page.waitForTimeout(3000);
-        await this.page.locator('input.select2-search__field').fill(employeeName);       
-        await this.page.locator('.select2-results__option').first().waitFor({ state: 'visible' });
+        await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchInput).fill(employeeName);       
+        await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchResult).first().waitFor({ state: 'visible' });
          await this.page.waitForTimeout(3000);
-        await this.page.locator('.select2-results__option').first().click();
+        await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchResult).first().click();
    }
 
   //-------------------Performed the select pay rate in Master Week Schedule-----------------
 
         async selectPayRate(payRate: string): Promise<void> {
-          await this.page.locator('select[name="is_whole_week_pay_rate"] + .select2-container .select2-selection__rendered').click();
-          await this.page.locator('input.select2-search__field').waitFor({ state: 'visible' });
-          await this.page.locator('input.select2-search__field').fill(payRate);
+          await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.payRateDropdown).click();
+          await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchInput).waitFor({ state: 'visible' });
+          await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchInput).fill(payRate);
           await this.page.waitForTimeout(2000);
-          await this.page.locator('.select2-results__option').first().waitFor({ state: 'visible' });
-          await this.page.locator('.select2-results__option').first().click();
+          await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchResult).first().waitFor({ state: 'visible' });
+          await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchResult).first().click();
   }
 
   //-------------------Performed the select POC in Master Week Schedule-----------------
 
          async selectPOC(pocName: string): Promise<void> {
-          await this.page.locator('select[name="is_whole_week_poc"] + .select2-container .select2-selection__rendered').click();
-          await this.page.locator('input.select2-search__field').waitFor({ state: 'visible' });
-          await this.page.locator('input.select2-search__field').fill(pocName);
+          await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.pocDropdown).click();
+          await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchInput).waitFor({ state: 'visible' });
+          await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchInput).fill(pocName);
           await this.page.waitForTimeout(1000);
-          await this.page.locator('.select2-results__option').first().waitFor({ state: 'visible' });
-          await this.page.locator('.select2-results__option').first().click();
+          await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchResult).first().waitFor({ state: 'visible' });
+          await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchResult).first().click();
   }
 
   //-------------------Performed the select service code in Master Week Schedule------------------
 
  async selectServiceCode(serviceCode: string): Promise<void> {
   // Locate specific service code dropdown
-  const dropdown = this.page.locator('select[name="is_whole_week_service_code"] + .select2-container .select2-selection__rendered');
+  const dropdown = this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.serviceCodeDropdown);
   
   // Open dropdown
   await dropdown.click();
 
   // Locate search box
-  const searchBox = this.page.locator('input.select2-search__field');
+  const searchBox = this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchInput);
   await searchBox.fill(serviceCode);
 
   // Locate matching option
-  const option = this.page.locator('.select2-results__option').first();
+  const option = this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.patientSearchResult).first();
   await option.waitFor({ state: 'visible', timeout: 5000 });
   await option.click();
 }
 
   //-------------------Performed the Copy Schedule To(Select the Every Day checkbox) Week Schedule------------------
   async clickEveryDayCheckbox(): Promise<void> {
-    await this.waitAndClick('label[for="sametime"]');
+    await this.waitAndClick(ALL_LOCATORS.MASTER_SCHEDULE.everyDayCheckbox);
   }
 
   //-------------------Performed the Save button in Master Week Schedule------------------
 
   async clickSaveButton(): Promise<void> {
-  await this.page.locator('#savefrm').click();
+  await this.page.locator(ALL_LOCATORS.MASTER_SCHEDULE.saveButton).click();
 
 }
 
