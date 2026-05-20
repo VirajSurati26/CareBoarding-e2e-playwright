@@ -1,14 +1,10 @@
 import { Page } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { ALL_LOCATORS } from '../utils/UsingAllLocators';
 
 export class LoginPage extends BasePage {
-  private readonly selectors = {
-    usernameInput: 'input[type="email"], input[name="username"], input[id="email"], input[name="email"]',
-    passwordInput: 'input[type="password"], input[name="password"]',
-    loginButton: 'button[type="submit"], button:has-text("Login"), button:has-text("Sign In"), input[type="submit"]',
-    errorMessage: '.error-message, .alert-danger, [role="alert"], .notification-error',
-    loginForm: 'form, .login-form, #login-form',
-  };
+  private readonly selectors = ALL_LOCATORS.LOGIN;
+
 
   constructor(page: Page) {
     super(page);

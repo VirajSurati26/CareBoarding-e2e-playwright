@@ -16,7 +16,7 @@ test.describe('Select employees module', () => {
     test.setTimeout(60000);
     const loginPage = new LoginPage(page);
     const changeEntity = new ChangeEntity(page);
-    const employee = new Employee(page);  
+    const employee = new Employee(page);
     await loginPage.goto(URLS.LOGIN);
     await loginPage.login(TEST_USERS.ADMIN_USER.username, TEST_USERS.ADMIN_USER.password);
     await changeEntity.selectEntity('Smith HHE');
@@ -26,7 +26,8 @@ test.describe('Select employees module', () => {
     console.log('Selected and opened employee:', selectedEmployee);
     await employee.clickCalendarButton();
     await employee.selectCurrentDate();
-    await employee.generateVisitAtRandomTime();
+    const { startTime, endTime } = await employee.generateNonOverlappingVisitTime();
+    await employee.fillVisitTime(startTime, endTime);
     const selectedPatient = await employee.selectPatientByIndex(0);
     console.log('Selected patients name:', selectedPatient);
     const selectedPayRate = await employee.selectPayRateByIndex(1);
@@ -37,7 +38,7 @@ test.describe('Select employees module', () => {
     console.log('Selected service code:', selectedServiceCode);
     await employee.clickCreateButton();
     await employee.clickOKButtonandPrintValidationMessage();
-    
+
     // await page.pause();
   });
 

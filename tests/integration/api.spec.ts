@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { request } from '@playwright/test';
+import { API_ENDPOINTS } from '../../src/config/apiEndpoints';
+import { TEST_USERS } from '../../data/testData/testData';
 
 test.describe('API Integration Tests', () => {
   let apiContext: any;
@@ -15,10 +17,10 @@ test.describe('API Integration Tests', () => {
   });
 
   test('should authenticate user via API', async () => {
-    const response = await apiContext.post('/auth/login', {
+    const response = await apiContext.post(API_ENDPOINTS.AUTH.LOGIN, {
       data: {
-        username: 'testuser@example.com',
-        password: 'TestPassword123!',
+        username: TEST_USERS.VALID_USER.username,
+        password: TEST_USERS.VALID_USER.password,
       },
     });
 
@@ -29,10 +31,10 @@ test.describe('API Integration Tests', () => {
 
   test('should fetch user profile', async () => {
     // First login to get token
-    const loginResponse = await apiContext.post('/auth/login', {
+    const loginResponse = await apiContext.post(API_ENDPOINTS.AUTH.LOGIN, {
       data: {
-        username: 'emily.johnson@yopmail.com',
-        password: '12345678',
+        username: TEST_USERS.MOBILE_USER.username,
+        password: TEST_USERS.MOBILE_USER.password,
       },
     });
 
@@ -40,7 +42,7 @@ test.describe('API Integration Tests', () => {
     const token = loginData.token;
 
     // Use token to fetch profile
-    const profileResponse = await apiContext.get('/user/profile', {
+    const profileResponse = await apiContext.get(API_ENDPOINTS.USER.PROFILE, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -48,11 +50,11 @@ test.describe('API Integration Tests', () => {
 
     expect(profileResponse.ok()).toBeTruthy();
     const profileData = await profileResponse.json();
-    expect(profileData.email).toBe('testuser@example.com');
+    expect(profileData.email).toBe(TEST_USERS.MOBILE_USER.username);
   });
 
   test('should handle invalid API requests', async () => {
-    const response = await apiContext.post('/auth/login', {
+    const response = await apiContext.post(API_ENDPOINTS.AUTH.LOGIN, {
       data: {
         username: 'invalid@example.com',
         password: 'wrongpassword',
