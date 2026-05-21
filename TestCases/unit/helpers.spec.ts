@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { TestHelpers } from '../../src/helpers/TestHelpers';
+import { TestHelpers } from '@/helpers/TestHelpers';
 
 test.describe('TestHelpers Unit Tests', () => {
   test('should generate random email', () => {

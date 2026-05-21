@@ -1,7 +1,6 @@
-import { test, expect } from '@playwright/test';
-import { request } from '@playwright/test';
-import { API_ENDPOINTS } from '../../src/config/apiEndpoints';
-import { TEST_USERS } from '../../data/testData/testData';
+import { test, expect, request } from '@playwright/test';
+import { API_ENDPOINTS } from '@/config/apiEndpoints';
+import { TEST_USERS } from '@/data/testData/testData';
 
 test.describe('API Integration Tests', () => {
   let apiContext: any;
@@ -38,6 +37,7 @@ test.describe('API Integration Tests', () => {
       },
     });
 
+    expect(loginResponse.ok()).toBeTruthy();
     const loginData = await loginResponse.json();
     const token = loginData.token;
 

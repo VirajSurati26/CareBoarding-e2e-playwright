@@ -1,8 +1,8 @@
 import { Page } from '@playwright/test';
 import { pause } from 'webdriverio/build/commands/browser';
-import { generateRandomShiftName, selectCalendarDate, convertAmPmTo24Hour, generateRandomAmPmTime, isValidAmPmTime, scrollToBottom } from '../utils/ReusableMethod';
+import { generateRandomShiftName, selectCalendarDate, convertAmPmTo24Hour, generateRandomAmPmTime, isValidAmPmTime, scrollToBottom } from '../../utils/ReusableMethod';
 import { threadId } from 'worker_threads';
-import { ALL_LOCATORS } from '../utils/UsingAllLocators';
+import { ALL_LOCATORS } from '../../utils/UsingAllLocators';
 
 export class MasterSchedule {
   constructor(private page: Page) {}
