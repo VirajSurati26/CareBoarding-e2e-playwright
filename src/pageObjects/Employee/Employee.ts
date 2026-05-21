@@ -1,6 +1,6 @@
 import { Page, Expect } from '@playwright/test';
-import { BasePage } from './BasePage';
-import { ALL_LOCATORS } from '../utils/UsingAllLocators';
+import { BasePage } from '@/pageObjects/BaseClass/BasePage';
+import { ALL_LOCATORS } from '@/utils/UsingAllLocators';
 
 export class Employee extends BasePage {
     constructor(page: Page) {

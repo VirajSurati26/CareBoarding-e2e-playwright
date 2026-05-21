@@ -1,5 +1,5 @@
 import { Page } from '@playwright/test';
-import { ALL_LOCATORS } from '../utils/UsingAllLocators';
+import { ALL_LOCATORS } from '@/utils/UsingAllLocators';
 
 export class ChangeEntity {
   constructor(private page: Page) {}

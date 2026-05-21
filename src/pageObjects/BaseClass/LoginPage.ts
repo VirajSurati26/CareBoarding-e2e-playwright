@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { ALL_LOCATORS } from '../utils/UsingAllLocators';
+import { ALL_LOCATORS } from '@/utils/UsingAllLocators';
 
 export class LoginPage extends BasePage {
   private readonly selectors = ALL_LOCATORS.LOGIN;

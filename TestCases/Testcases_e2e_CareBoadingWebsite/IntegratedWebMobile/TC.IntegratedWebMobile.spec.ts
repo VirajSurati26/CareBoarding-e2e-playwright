@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { BaseTest } from "@/base/BaseTest";
 import { TEST_USERS, URLS } from "@/data/testData/testData";
-import { ChangeEntity } from "@/pageObjects/ChangeEntity";
-import { Employee } from "@/pageObjects/Employee";
-import { LoginPage } from "@/pageObjects/LoginPage";
-import { MobileApp } from "@/pageObjects/MobileApp(Appium)";
+import { ChangeEntity } from "@/pageObjects/ChangeEntity/ChangeEntity";
+import { Employee } from "@/pageObjects/Employee/Employee";
+import { LoginPage } from "@/pageObjects/BaseClass/LoginPage";
+import { MobileApp } from "@/pageObjects/IntegratedWebMobileApp/MobileApp(Appium)";
 
 test.describe('Web to Mobile Visit Test', () => {
   let mobileApp: MobileApp;

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { LoginPage } from '../../src/pageObjects/LoginPage';
-import { TEST_USERS, URLS } from '../../data/testData/testData';
+import { LoginPage } from '@/pageObjects/BaseClass/LoginPage';
+import { TEST_USERS, URLS } from '@/data/testData/testData';
 
 
 test.describe('Login Module', () => {

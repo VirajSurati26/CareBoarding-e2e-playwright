@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { LoginPage } from '../../src/pageObjects/LoginPage';
-import { ChangeEntity } from '../../src/pageObjects/ChangeEntity';
-import { MasterSchedule } from '../../src/pageObjects/MasterSchdule';
-import { TEST_USERS, URLS } from '../../data/testData/testData';
-import { BaseTest } from '../../src/base/BaseTest';
+import { LoginPage } from '@/pageObjects/BaseClass/LoginPage';
+import { ChangeEntity } from '@/pageObjects/ChangeEntity/ChangeEntity';
+import { MasterSchedule } from '@/pageObjects/MasterSchedule/MasterSchedule';
+import { TEST_USERS, URLS } from '@/data/testData/testData';
+import { BaseTest } from '@/base/BaseTest';
 
 test.describe('Select patients module', () => {
   test.beforeEach(async ({ page }) => {

@@ -1,8 +1,8 @@
 import { BaseTest } from "@/base/BaseTest";
 import { TEST_USERS, URLS } from "@/data/testData/testData";
-import { ChangeEntity } from "@/pageObjects/ChangeEntity";
-import { Employee } from "@/pageObjects/Employee";
-import { LoginPage } from "@/pageObjects/LoginPage";
+import { ChangeEntity } from "@/pageObjects/ChangeEntity/ChangeEntity";
+import { Employee } from "@/pageObjects/Employee/Employee";
+import { LoginPage } from "@/pageObjects/BaseClass/LoginPage";
 import test from "@playwright/test";
 
 test.describe('Select employees module', () => {
