@@ -14,11 +14,11 @@ export class Employee extends BasePage {
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.loadingOverlay).waitFor({ state: 'hidden', timeout: 15000 }).catch(() => { });
 
         // Wait for Employees link to be clickable
-        await this.page.locator(ALL_LOCATORS.EMPLOYEE.navLinkEmployees).filter({ hasText: 'Employees' }).first().waitFor({ state: 'visible', timeout: 10000 });
-        await this.page.locator(ALL_LOCATORS.EMPLOYEE.navLinkEmployees).filter({ hasText: 'Employees' }).first().click();
+        const employeeLink = this.page.locator(ALL_LOCATORS.EMPLOYEE.navLinkEmployees).filter({ hasText: 'Employees' }).first();
+        await employeeLink.waitFor({ state: 'visible', timeout: 10000 });
+        await employeeLink.click();
 
-        // Wait for any loading after click
-        await this.page.waitForTimeout(2000);
+        await this.page.locator(ALL_LOCATORS.EMPLOYEE.searchEmployeeBtn).waitFor({ state: 'visible', timeout: 15000 });
     }
 
     // Perform the Click the "Search Employee" button in Employee Dropdown
@@ -38,14 +38,16 @@ export class Employee extends BasePage {
 
     // Perform the Click the "Calendar" button in Employee view page
     async clickCalendarButton() {
-        await this.page.waitForTimeout(2000);
-        await this.page.locator(ALL_LOCATORS.EMPLOYEE.calendarBtn).first().click();
+        const calendarBtn = this.page.locator(ALL_LOCATORS.EMPLOYEE.calendarBtn).first();
+        await calendarBtn.waitFor({ state: 'visible', timeout: 10000 });
+        await calendarBtn.click();
     }
 
     async selectCurrentDate() {
-        await this.page.waitForTimeout(2000);
         const day = new Date().getDate();
-        await this.page.locator(ALL_LOCATORS.EMPLOYEE.calendarDay(day)).first().click();
+        const dayLocator = this.page.locator(ALL_LOCATORS.EMPLOYEE.calendarDay(day)).first();
+        await dayLocator.waitFor({ state: 'visible', timeout: 10000 });
+        await dayLocator.click();
     }
 
     //=============Sucessfully Create the visit in pop-up message====================
@@ -78,15 +80,22 @@ export class Employee extends BasePage {
     }
 
     async generateNonOverlappingVisitTime(): Promise<{ startTime: string, endTime: string }> {
-        // Read calendar page body to scan for scheduled times
-        const cellText = await this.page.textContent('body') || "";
+        const timeElements = await this.page.locator(ALL_LOCATORS.EMPLOYEE.calendarTimeCell).allTextContents();
+        const scheduledHours = new Set<number>();
 
-        // Start scanning from the hour that is 15 minutes from now
+        for (const text of timeElements) {
+            const match = text.match(/(\d{1,2}):(\d{2})/);
+            if (match) {
+                const hour = Number(match[1]);
+                if (!Number.isNaN(hour)) {
+                    scheduledHours.add(hour);
+                }
+            }
+        }
+
         let startHour = new Date(Date.now() + 15 * 60 * 1000).getHours();
         let attempts = 0;
-
-        // Keep incrementing to next hour if it's already scheduled on calendar text
-        while (cellText.includes(`${startHour.toString().padStart(2, '0')}:`) && attempts < 24) {
+        while (scheduledHours.has(startHour) && attempts < 24) {
             startHour = (startHour + 1) % 24;
             attempts++;
         }
@@ -115,12 +124,11 @@ export class Employee extends BasePage {
 
     // Patient dropdown selection by index
     async selectPatientByIndex(index: number, dropdownSelector?: string): Promise<string> {
-        await this.page.waitForTimeout(2000);
         const selector = dropdownSelector || ALL_LOCATORS.EMPLOYEE.patientDropdown;
-        await this.page.locator(selector).first().click();
-        await this.page.waitForTimeout(1000);
+        const dropdown = this.page.locator(selector).first();
+        await dropdown.waitFor({ state: 'visible', timeout: 10000 });
+        await dropdown.click();
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).first().waitFor({ state: 'visible', timeout: 8000 });
-        // Get the patient name before clicking
         const patientName = await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).textContent();
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).click();
         return patientName?.trim() || '';
@@ -138,24 +146,25 @@ export class Employee extends BasePage {
     //-------------Perform the POC Select the Dropdown button----------------------
 
     async selectPOCByIndex(index: number): Promise<string> {
-        await this.page.waitForTimeout(2000);
-        await this.page.locator(ALL_LOCATORS.EMPLOYEE.pocDropdown).first().click();
+        const pocDropdown = this.page.locator(ALL_LOCATORS.EMPLOYEE.pocDropdown).first();
+        await pocDropdown.waitFor({ state: 'visible', timeout: 10000 });
+        await pocDropdown.click();
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).first().waitFor({ state: 'visible', timeout: 8000 });
         const poc = await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).textContent() || '';
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).click();
-        await this.page.waitForTimeout(2000);
         return poc;
     }
 
     //-------------Perform the Service Code Select the in Dropdown button----------------------
 
     async selectServiceCodeByIndex(index: number): Promise<string> {
-
-        await this.page.locator(ALL_LOCATORS.EMPLOYEE.serviceCodeDropdown).first().click();
-        await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).first().waitFor({ state: 'visible', timeout: 8000 });
-        const serviceCode = await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).textContent() || ''
+        const serviceCodeDropdown = this.page.locator(ALL_LOCATORS.EMPLOYEE.serviceCodeDropdown).first();
+        await serviceCodeDropdown.waitFor({ state: 'visible', timeout: 10000 });
+        await serviceCodeDropdown.click();
+        const option = this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).first();
+        await option.waitFor({ state: 'visible', timeout: 8000 });
+        const serviceCode = await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).textContent() || '';
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).click();
-        await this.page.waitForTimeout(2000);
         return serviceCode;
     }
 

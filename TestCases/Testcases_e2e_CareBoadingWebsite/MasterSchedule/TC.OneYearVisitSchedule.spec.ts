@@ -22,8 +22,11 @@ test.describe('One year recurring visit schedule', () => {
 
     console.log('Recurring schedule created with:', result);
 
-    // Assert that the page still shows the recurring schedule section or save confirmation
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    expect(result).toBeTruthy();
+    expect(result.shiftName).toBeTruthy();
+    expect(result.fromDate).toMatch(/^\d{2}-\d{2}-\d{4}$/);
+    expect(result.toDate).toMatch(/^\d{2}-\d{2}-\d{4}$/);
+    expect(result.startTime).toMatch(/^\d{2}:\d{2}$/);
+    expect(result.endTime).toMatch(/^\d{2}:\d{2}$/);
   });
 });

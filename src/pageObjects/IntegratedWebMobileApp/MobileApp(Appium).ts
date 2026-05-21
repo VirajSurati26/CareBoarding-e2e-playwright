@@ -17,8 +17,9 @@ export class MobileApp {
             if (stdout.includes('emulator-') || stdout.includes('device\n')) {
                 return console.log('✅ Active emulator detected');
             }
-        } catch { }
-
+        } catch (error) {
+            console.log('⚠️ Could not check for existing devices:', error);
+        }
         console.log(`🚀 Starting ${avd}...`);
         exec(`emulator -avd ${avd} -no-boot-anim -no-audio -gpu host -no-snapshot-load`);
 
@@ -26,7 +27,9 @@ export class MobileApp {
             try {
                 const { stdout } = await execAsync('adb shell getprop sys.boot_completed');
                 if (stdout.trim() === '1') return console.log('✨ Booted successfully!');
-            } catch { }
+            } catch (error) {
+                console.log('⚠️ Could not check boot status:', error);
+            }
             await new Promise(r => setTimeout(r, 2000));
         }
     }
@@ -36,7 +39,9 @@ export class MobileApp {
         try {
             const res = await fetch('http://127.0.0.1:4724/status').catch(() => null);
             if (res && res.ok) return console.log('✅ Appium port 4724 is ready');
-        } catch { }
+        } catch (error) {
+            console.log('⚠️ Could not check Appium status:', error);
+        }
 
         console.log('🚀 Starting Appium Server on port 4724...');
         exec('npx appium --port 4724');
@@ -54,7 +59,9 @@ export class MobileApp {
                 activeDevice = match[0];
                 console.log(`🔌 Dynamically resolved active emulator: ${activeDevice}`);
             }
-        } catch { }
+        } catch (error) {
+            console.log('⚠️ Could not check for existing devices:', error);
+        }
 
         this.driver = await remote({
             hostname: '127.0.0.1', port: 4724, path: '/',

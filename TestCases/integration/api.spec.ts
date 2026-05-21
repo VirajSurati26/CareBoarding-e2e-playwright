@@ -37,6 +37,7 @@ test.describe('API Integration Tests', () => {
       },
     });
 
+    expect(loginResponse.ok()).toBeTruthy();
     const loginData = await loginResponse.json();
     const token = loginData.token;
 
