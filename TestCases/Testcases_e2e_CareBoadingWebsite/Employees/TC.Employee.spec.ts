@@ -49,9 +49,9 @@ test.describe('Select employees module', () => {
       expect(selectedPatient).toBeTruthy();
       const selectedPayRate = await employee.selectPayRateByIndex(1);
       expect(selectedPayRate).toBeTruthy();
-      const selectedPOC = await employee.selectPOCByIndex(0);
+      const selectedPOC = await employee.selectPOC("TESTING (671268)");
       expect(selectedPOC).toBeTruthy();
-      const selectedServiceCode = await employee.selectServiceCodeByIndex(0);
+      const selectedServiceCode = await employee.selectServiceCode("G0156 U7");
       expect(selectedServiceCode).toBeTruthy();
       await employee.clickCreateButton();
       await employee.clickOKButtonandPrintValidationMessage();

@@ -24,7 +24,7 @@ export const EMPLOYEE_SELECTORS = {
   swalConfirm: '.swal2-confirm',
   swalContainer: '.swal2-html-container',
   select2ResultsOption: '.select2-results__option',
-  calendarDay: (day: number | string) => `text="${day}"`,
+  calendarDay: (day: number | string) => `.fc-daygrid-day-number:text-is("${day}"), .fc-day-number:text-is("${day}")`,
   calendarTimeCell: '.fc-event, .fc-daygrid-event, .fc-event-title',
 };
 

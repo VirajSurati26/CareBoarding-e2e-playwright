@@ -12,9 +12,8 @@ export class ChangeEntity {
     // Click on the specific option
     await this.page.click(`${ALL_LOCATORS.CHANGE_ENTITY.entityOptions}:has-text("${entityName}")`);
     await this.page.waitForFunction(
-      (selector, expected) => document.querySelector(selector)?.textContent?.includes(expected),
-      ALL_LOCATORS.CHANGE_ENTITY.entityDropdown,
-      entityName,
+      ([selector, expected]) => document.querySelector(selector)?.textContent?.includes(expected),
+      [ALL_LOCATORS.CHANGE_ENTITY.entityDropdown, entityName],
       { timeout: 10000 }
     );
     
@@ -45,5 +44,4 @@ export class ChangeEntity {
     return entities.filter(e => e.trim());
   }
 }
-
 

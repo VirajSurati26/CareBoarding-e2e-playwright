@@ -45,8 +45,8 @@ export class Employee extends BasePage {
 
     async selectCurrentDate() {
         const day = new Date().getDate();
-        const dayLocator = this.page.locator(ALL_LOCATORS.EMPLOYEE.calendarDay(day)).first();
-        await dayLocator.waitFor({ state: 'visible', timeout: 10000 });
+        const dayLocator = this.page.locator(ALL_LOCATORS.EMPLOYEE.calendarDay(day)).filter({ hasNot: this.page.locator('.d-none') }).first();
+        await dayLocator.waitFor({ state: 'visible', timeout: 15000 });
         await dayLocator.click();
     }
 
@@ -131,13 +131,20 @@ export class Employee extends BasePage {
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).first().waitFor({ state: 'visible', timeout: 8000 });
         const patientName = await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).textContent();
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).click();
+        
+        // Wait for background AJAX requests (loading POC & Service Codes for the selected patient) to complete
+        await this.page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+        
         return patientName?.trim() || '';
     }
 
     //----------------Perform the Pay Rate the Dropdown button----------------------
 
     async selectPayRateByIndex(index: number): Promise<string> {
-        await this.page.locator(ALL_LOCATORS.EMPLOYEE.payRateDropdown).first().click();
+        const payRateDropdown = this.page.locator(ALL_LOCATORS.EMPLOYEE.payRateDropdown).first();
+        await payRateDropdown.waitFor({ state: 'visible', timeout: 10000 });
+        await payRateDropdown.click();
+        await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).first().waitFor({ state: 'visible', timeout: 8000 });
         const payRate = await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).textContent() || '';
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).click();
         return payRate;
@@ -145,27 +152,50 @@ export class Employee extends BasePage {
 
     //-------------Perform the POC Select the Dropdown button----------------------
 
-    async selectPOCByIndex(index: number): Promise<string> {
+    async selectPOC(pocName: string): Promise<string> {
         const pocDropdown = this.page.locator(ALL_LOCATORS.EMPLOYEE.pocDropdown).first();
         await pocDropdown.waitFor({ state: 'visible', timeout: 10000 });
         await pocDropdown.click();
-        await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).first().waitFor({ state: 'visible', timeout: 8000 });
-        const poc = await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).textContent() || '';
-        await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).click();
-        return poc;
+        
+        const searchField = this.page.locator('input.select2-search__field');
+        await searchField.waitFor({ state: 'visible', timeout: 5000 });
+        await searchField.focus();
+        await searchField.pressSequentially(pocName, { delay: 50 });
+        
+        // Wait for Select2 to start searching and then finish searching
+        await this.page.waitForTimeout(1000);
+        await this.page.locator('.select2-results__option:has-text("Searching")').waitFor({ state: 'hidden', timeout: 8000 }).catch(() => {});
+        
+        const firstWord = pocName.split(' ')[0];
+        const option = this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).filter({ hasText: firstWord }).first();
+        await option.waitFor({ state: 'visible', timeout: 10000 });
+        const selectedText = await option.textContent() || '';
+        await option.click();
+        return selectedText.trim();
     }
 
     //-------------Perform the Service Code Select the in Dropdown button----------------------
 
-    async selectServiceCodeByIndex(index: number): Promise<string> {
+    async selectServiceCode(serviceCodeName: string): Promise<string> {
         const serviceCodeDropdown = this.page.locator(ALL_LOCATORS.EMPLOYEE.serviceCodeDropdown).first();
         await serviceCodeDropdown.waitFor({ state: 'visible', timeout: 10000 });
         await serviceCodeDropdown.click();
-        const option = this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).first();
-        await option.waitFor({ state: 'visible', timeout: 8000 });
-        const serviceCode = await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).textContent() || '';
-        await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).click();
-        return serviceCode;
+        
+        const searchField = this.page.locator('input.select2-search__field');
+        await searchField.waitFor({ state: 'visible', timeout: 5000 });
+        await searchField.focus();
+        await searchField.pressSequentially(serviceCodeName, { delay: 50 });
+        
+        // Wait for Select2 to start searching and then finish searching
+        await this.page.waitForTimeout(1000);
+        await this.page.locator('.select2-results__option:has-text("Searching")').waitFor({ state: 'hidden', timeout: 8000 }).catch(() => {});
+        
+        const firstWord = serviceCodeName.split(' ')[0];
+        const option = this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).filter({ hasText: firstWord }).first();
+        await option.waitFor({ state: 'visible', timeout: 10000 });
+        const selectedText = await option.textContent() || '';
+        await option.click();
+        return selectedText.trim();
     }
 
     //---------------Perform the Create button Apply----------------------
