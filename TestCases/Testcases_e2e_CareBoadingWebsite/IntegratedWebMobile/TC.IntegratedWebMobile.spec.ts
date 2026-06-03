@@ -48,8 +48,8 @@ test.describe('Web to Mobile Visit Test', () => {
 
       const rawPatientName = await employee.selectPatientByIndex(0);
       await employee.selectPayRateByIndex(1);
-      await employee.selectPOCByIndex(0);
-      await employee.selectServiceCodeByIndex(0);
+      await employee.selectPOC("TESTING");
+      await employee.selectServiceCode("G0156");
       await employee.clickCreateButton();
       await employee.clickOKButtonandPrintValidationMessage();
 
