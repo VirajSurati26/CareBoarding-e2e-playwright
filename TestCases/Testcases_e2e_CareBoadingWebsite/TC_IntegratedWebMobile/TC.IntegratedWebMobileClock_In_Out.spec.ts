@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { BaseTest } from "@/base/BaseTest";
 import { TEST_USERS, URLS } from "@/data/testData/testData";
-import { ChangeEntity } from "@/pageObjects/ChangeEntity/ChangeEntity";
-import { Employee } from "@/pageObjects/Employee/Employee";
+import { ChangeEntity } from "@/pageObjects/BaseClass/ChangeEntity";
+import { Employee } from "@/pageObjects/Employee/Reguler_Visit_Create_Employee";
 import { LoginPage } from "@/pageObjects/BaseClass/LoginPage";
-import { MobileApp } from "@/pageObjects/IntegratedWebMobileApp/MobileApp(Appium)";
+import { MobileApp } from "@/pageObjects/IntegratedWebMobileApp/IntegratedWebMobileClock_In_Out";
 
 test.describe('Web to Mobile Visit Test', () => {
   let mobileApp: MobileApp;
@@ -134,41 +134,6 @@ test.describe('Web to Mobile Visit Test', () => {
       } catch (error) {
         console.error('Mobile verification failed but web assertions will continue:', error);
       }
-
-      // Just log the issue but don't fail or skip the test
-      // The web part is the main functionality we're testing
-      console.log('💡 To enable mobile verification:');
-      console.log('   1. Install Java JDK and set JAVA_HOME');
-      console.log('   2. Start Android Studio');
-      console.log('   3. Open AVD Manager');
-      console.log('   4. Launch your Android emulator');
-      console.log('   5. Run: adb devices to verify connection');
-      console.log('   6. Start Appium: npx appium --port 4724');
-
-      //---------- Perform the successfully Login In App----------------
-      console.log('Mobile device connected, logging in...');
-      await mobileApp.login(TEST_USERS.MOBILE_USER.username, TEST_USERS.MOBILE_USER.password);
-      await new Promise(r => setTimeout(r, 5000));
-      console.log("Patient Found : ", patientName);
-
-      //----------Perform the recent visit select----------------
-      const visitExists = await mobileApp.findRecentVisit(empName, patientName, visitStartTime12H);
-      expect(visitExists).toBe(true);
-
-      console.log('👆 Clicking on the visit card...');
-      await mobileApp.clickVisit(patientName, visitStartTime12H);
-
-      //----------Perform the successfully clock-in------------
-      await mobileApp.clickClockIn();
-      await new Promise(r => setTimeout(r, 5000));
-
-      //-----------Click the out and Fill-up all details--------
-      await mobileApp.clickClockOut();
-      await new Promise(r => setTimeout(r, 5000));
-      await mobileApp.clientVerification();
-      await mobileApp.patientsSignature();
-      await mobileApp.saveButton();
-      await mobileApp.okButton();
 
       // Just log the issue but don't fail or skip the test
       // The web part is the main functionality we're testing

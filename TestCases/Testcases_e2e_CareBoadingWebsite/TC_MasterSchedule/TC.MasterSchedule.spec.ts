@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '@/pageObjects/BaseClass/LoginPage';
-import { ChangeEntity } from '@/pageObjects/ChangeEntity/ChangeEntity';
+import { ChangeEntity } from '@/pageObjects/BaseClass/ChangeEntity';
 import { MasterSchedule } from '@/pageObjects/MasterSchedule/MasterSchedule';
 import { TEST_USERS, URLS } from '@/data/testData/testData';
 import { BaseTest } from '@/base/BaseTest';

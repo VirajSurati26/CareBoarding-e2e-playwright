@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { BaseTest } from "@/base/BaseTest";
 import { TEST_USERS, URLS } from "@/data/testData/testData";
-import { ChangeEntity } from "@/pageObjects/ChangeEntity/ChangeEntity";
-import { Employee } from "@/pageObjects/Employee/Employee";
+import { ChangeEntity } from "@/pageObjects/BaseClass/ChangeEntity";
+import { Employee } from "@/pageObjects/Employee/Reguler_Visit_Create_Employee";
 import { LoginPage } from "@/pageObjects/BaseClass/LoginPage";
 
 const loginAndSelectEntity = async (page: any) => {
