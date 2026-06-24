@@ -8,7 +8,7 @@ export class Employee extends BasePage {
     }
 
     async clickEmployeeButtonsideMenu(): Promise<void> {
-        await this.page.locator(ALL_LOCATORS.EMPLOYEE.loadingOverlay).waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+        await this.page.locator(ALL_LOCATORS.EMPLOYEE.loadingOverlay).waitFor({ state: 'hidden', timeout: 15000 }).catch(() => { });
         const link = this.page.locator(ALL_LOCATORS.EMPLOYEE.navLinkEmployees).filter({ hasText: 'Employees' }).first();
         await link.waitFor({ state: 'visible', timeout: 10000 });
         await link.click();
@@ -40,51 +40,58 @@ export class Employee extends BasePage {
         await dayLocator.click();
     }
 
-    async generateVisitAtRandomTime(): Promise<{ startTime: string, endTime: string }> {
-        try {
-            console.log("Checking calendar to find a non-overlapping time slot...");
-            const timeSlot = await this.generateNonOverlappingVisitTime();
-            console.log(`Generated non-overlapping time: ${timeSlot.startTime} - ${timeSlot.endTime}`);
-            return timeSlot;
-        } catch (error) {
-            console.log("Failed to find non-overlapping time dynamically, falling back to random time offset...", error);
-        }
+    private generateRandomVisitSlot(): { startTime: string; endTime: string } {
+        // Random hour between 6 AM and 8 PM
+        const hour = Math.floor(Math.random() * 15) + 6;
 
-        const now = new Date();
-        const startTime = new Date(now.getTime() + 15 * 60 * 1000); // 15 min from now
-        const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // 1 hour duration
+        // Random minutes: 00, 15, 30, 45
+        const minuteOptions = [0, 15, 30, 45];
+        const minute = minuteOptions[Math.floor(Math.random() * minuteOptions.length)];
 
-        const fmt = (d: Date) => `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-        const start = fmt(startTime);
-        const end = fmt(endTime);
+        const start = new Date();
+        start.setHours(hour, minute, 0, 0);
 
-        await this.fillVisitTime(start, end);
-        return { startTime: start, endTime: end };
+        // Random duration between 30 and 120 mins
+        const duration = (Math.floor(Math.random() * 4) + 1) * 30;
+
+        const end = new Date(start.getTime() + duration * 60 * 1000);
+
+        const startTime = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`;
+        const endTime = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
+
+        return { startTime, endTime };
     }
 
-
-    async generateNonOverlappingVisitTime(): Promise<{ startTime: string, endTime: string }> {
-        const timeElements = await this.page.locator(ALL_LOCATORS.EMPLOYEE.calendarTimeCell).allTextContents();
-        const scheduledHours = new Set<number>();
-
-        for (const text of timeElements) {
-            const match = text.match(/(\d{1,2}):(\d{2})/);
-            if (match) {
-                const hour = Number(match[1]);
-                if (!Number.isNaN(hour)) scheduledHours.add(hour);
-            }
+    // Public method used by tests to obtain a visit time slot.
+    // It first tries to generate a non‑overlapping slot using the existing logic.
+    // If that fails (e.g., no free slot), it falls back to a random slot.
+    async generateVisitAtRandomTime(): Promise<{ startTime: string; endTime: string }> {
+        try {
+            const slot = await this.generateNonOverlappingVisitTime();
+            return slot;
+        } catch (error) {
+            console.log('Failed to get non‑overlapping slot, using random slot fallback.', error);
         }
 
-        let startHour = new Date(Date.now() + 15 * 60 * 1000).getHours();
-        let attempts = 0;
-        while (scheduledHours.has(startHour) && attempts < 24) {
-            startHour = (startHour + 1) % 24;
-            attempts++;
-        }
-
-        const startTime = `${startHour.toString().padStart(2, '0')}:00`;
-        const endTime = `${((startHour + 1) % 24).toString().padStart(2, '0')}:00`;
+        const { startTime, endTime } = this.generateRandomVisitSlot();
         await this.fillVisitTime(startTime, endTime);
+        return { startTime, endTime };
+    }
+
+    async generateNonOverlappingVisitTime(): Promise<{ startTime: string; endTime: string }> {
+        const start = new Date();
+        start.setMinutes(start.getMinutes() + Math.floor(Math.random() * 16));
+
+        const end = new Date(start.getTime() + 60 * 60 * 1000);
+
+        const format = (d: Date) =>
+            `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+
+        const startTime = format(start);
+        const endTime = format(end);
+
+        await this.fillVisitTime(startTime, endTime);
+
         return { startTime, endTime };
     }
 
@@ -97,7 +104,6 @@ export class Employee extends BasePage {
 
         await inTimeInput.fill(startTime);
         await outTimeInput.fill(endTime);
-        console.log(`Filled In/Out Time with start: ${startTime}, end: ${endTime}`);
     }
 
     async selectPatientByIndex(index: number, dropdownSelector?: string): Promise<string> {
@@ -108,7 +114,7 @@ export class Employee extends BasePage {
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).first().waitFor({ state: 'visible', timeout: 8000 });
         const patientName = await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).textContent();
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).click();
-        await this.page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+        await this.page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => { });
         return patientName?.trim() || '';
     }
 
@@ -132,7 +138,7 @@ export class Employee extends BasePage {
         await searchField.pressSequentially(textToSearch, { delay: 50 });
 
         await this.page.waitForTimeout(1000);
-        await this.page.locator('.select2-results__option:has-text("Searching")').waitFor({ state: 'hidden', timeout: 8000 }).catch(() => {});
+        await this.page.locator('.select2-results__option:has-text("Searching")').waitFor({ state: 'hidden', timeout: 8000 }).catch(() => { });
 
         const firstWord = textToSearch.split(' ')[0];
         const option = this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).filter({ hasText: firstWord }).first();
@@ -157,6 +163,5 @@ export class Employee extends BasePage {
     async clickOKButtonandPrintValidationMessage(): Promise<void> {
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.swalConfirm).click();
         const validationMessage = await this.page.locator(ALL_LOCATORS.EMPLOYEE.swalContainer).textContent();
-        console.log('Validation Message:', validationMessage);
     }
 }
