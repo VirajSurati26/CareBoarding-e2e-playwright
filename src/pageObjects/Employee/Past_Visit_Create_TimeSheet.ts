@@ -8,7 +8,7 @@ export class Employee extends BasePage {
     }
 
     async clickEmployeeButtonsideMenu(): Promise<void> {
-        await this.page.locator(ALL_LOCATORS.EMPLOYEE.loadingOverlay).waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+        await this.page.locator(ALL_LOCATORS.EMPLOYEE.loadingOverlay).waitFor({ state: 'hidden', timeout: 15000 }).catch(() => { });
         const link = this.page.locator(ALL_LOCATORS.EMPLOYEE.navLinkEmployees).filter({ hasText: 'Employees' }).first();
         await link.waitFor({ state: 'visible', timeout: 10000 });
         await link.click();
@@ -40,52 +40,23 @@ export class Employee extends BasePage {
         await dayLocator.click();
     }
 
-    async generateVisitAtRandomTime(): Promise<{ startTime: string, endTime: string }> {
-        try {
-            console.log("Checking calendar to find a non-overlapping time slot...");
-            const timeSlot = await this.generateNonOverlappingVisitTime();
-            console.log(`Generated non-overlapping time: ${timeSlot.startTime} - ${timeSlot.endTime}`);
-            return timeSlot;
-        } catch (error) {
-            console.log("Failed to find non-overlapping time dynamically, falling back to random time offset...", error);
-        }
+    async generatePastVisitTime(): Promise<{ startTime: string; endTime: string }> {
+        const start = new Date();
 
-        const now = new Date();
-        // Generate a past time slot ending at the current time, with a 1 hour duration
-        const endTime = now; // end at current time
-        const startTime = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
+        // Random time within the last 2 hours
+        start.setMinutes(start.getMinutes() - Math.floor(Math.random() * 120));
 
-        const fmt = (d: Date) => `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-        const start = fmt(startTime);
-        const end = fmt(endTime);
+        // Duration = 60 minutes
+        const end = new Date(start.getTime() + 60 * 60 * 1000);
 
-        await this.fillVisitTime(start, end);
-        return { startTime: start, endTime: end };
-    }
+        const format = (d: Date) =>
+            `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
+        const startTime = format(start);
+        const endTime = format(end);
 
-    async generateNonOverlappingVisitTime(): Promise<{ startTime: string, endTime: string }> {
-        const timeElements = await this.page.locator(ALL_LOCATORS.EMPLOYEE.calendarTimeCell).allTextContents();
-        const scheduledHours = new Set<number>();
-
-        for (const text of timeElements) {
-            const match = text.match(/(\d{1,2}):(\d{2})/);
-            if (match) {
-                const hour = Number(match[1]);
-                if (!Number.isNaN(hour)) scheduledHours.add(hour);
-            }
-        }
-
-        let startHour = new Date(Date.now() + 15 * 60 * 1000).getHours();
-        let attempts = 0;
-        while (scheduledHours.has(startHour) && attempts < 24) {
-            startHour = (startHour + 1) % 24;
-            attempts++;
-        }
-
-        const startTime = `${startHour.toString().padStart(2, '0')}:00`;
-        const endTime = `${((startHour + 1) % 24).toString().padStart(2, '0')}:00`;
         await this.fillVisitTime(startTime, endTime);
+
         return { startTime, endTime };
     }
 
@@ -98,7 +69,6 @@ export class Employee extends BasePage {
 
         await inTimeInput.fill(startTime);
         await outTimeInput.fill(endTime);
-        console.log(`Filled In/Out Time with start: ${startTime}, end: ${endTime}`);
     }
 
     async selectPatientByIndex(index: number, dropdownSelector?: string): Promise<string> {
@@ -109,7 +79,7 @@ export class Employee extends BasePage {
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).first().waitFor({ state: 'visible', timeout: 8000 });
         const patientName = await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).textContent();
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).nth(index).click();
-        await this.page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+        await this.page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => { });
         return patientName?.trim() || '';
     }
 
@@ -133,7 +103,7 @@ export class Employee extends BasePage {
         await searchField.pressSequentially(textToSearch, { delay: 50 });
 
         await this.page.waitForTimeout(1000);
-        await this.page.locator('.select2-results__option:has-text("Searching")').waitFor({ state: 'hidden', timeout: 8000 }).catch(() => {});
+        await this.page.locator('.select2-results__option:has-text("Searching")').waitFor({ state: 'hidden', timeout: 8000 }).catch(() => { });
 
         const firstWord = textToSearch.split(' ')[0];
         const option = this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).filter({ hasText: firstWord }).first();
@@ -158,6 +128,16 @@ export class Employee extends BasePage {
     async clickOKButtonandPrintValidationMessage(): Promise<void> {
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.swalConfirm).click();
         const validationMessage = await this.page.locator(ALL_LOCATORS.EMPLOYEE.swalContainer).textContent();
-        console.log('Validation Message:', validationMessage);
+    }
+    private getRandomPastSlot(): { start: string; end: string } {
+        const visitLengthMins = 30 + Math.floor(Math.random() * 91); // 30‑120 minutes
+        const maxPastMs = 7 * 24 * 60 * 60 * 1000; // 7 days
+        const minPastMs = 5 * 60 * 1000; // 5 minutes
+        const pastOffsetMs = minPastMs + Math.random() * (maxPastMs - minPastMs);
+        const endDate = new Date(Date.now() - pastOffsetMs);
+        const startDate = new Date(endDate.getTime() - visitLengthMins * 60 * 1000);
+        const fmt = (d: Date) => `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+        return { start: fmt(startDate), end: fmt(endDate) };
     }
 }
+

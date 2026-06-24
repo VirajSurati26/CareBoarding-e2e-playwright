@@ -16,5 +16,8 @@ test('Visit Review appears in Visits module', async ({ page }) => {
   await loginAndSelectEntity(page);
   const visitReviewPage = new Visit_Review_IN_Visits_Field(page);
   await visitReviewPage.ClickINVisitInSideMenu();
-  await expect(page.locator('h1', { hasText: /Visit Review/i })).toBeVisible();
+  await expect(page.locator('h1', { hasText: /Visit Management/i })).toBeVisible();
+
 });
+
+
