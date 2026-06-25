@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { TEST_USERS, URLS } from "@/data/testData/testData";
 import { ChangeEntity } from "@/pageObjects/BaseClass/ChangeEntity";
 import { LoginPage } from "@/pageObjects/BaseClass/LoginPage";
-import { Visit_Review_IN_Visits_Field } from "@/pageObjects/Visits/Visit_Review_In_Visits_Field";
+import { Visit_Review_IN_Visits_Field } from "@/pageObjects/Visits_Module/Visit_Review_In_Visits_Field";
 
 const loginAndSelectEntity = async (page: any) => {
     const loginPage = new LoginPage(page);
