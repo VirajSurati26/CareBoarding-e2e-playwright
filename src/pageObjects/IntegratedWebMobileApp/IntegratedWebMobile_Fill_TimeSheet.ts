@@ -17,33 +17,44 @@ export class MobileApp {
     async startEmulator(avd = process.env.AVD_NAME || 'Pixel_6a'): Promise<void> {
         try {
             const { stdout } = await execAsync('adb devices');
-            if (stdout.includes('emulator-') || stdout.includes('device\n')) {
+            if (/emulator-\d+\s+device/.test(stdout) || /\tdevice\s*$/m.test(stdout)) {
                 return;
             }
         } catch (error) {
             console.log('⚠️ Could not check for existing devices:', error);
         }
-        const androidHome = process.env.ANDROID_HOME;
+
+        const androidHome = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
         const emulatorCmd = androidHome ? `"${androidHome}\\emulator\\emulator.exe"` : 'emulator';
         exec(`${emulatorCmd} -avd ${avd} -no-boot-anim -no-audio -gpu host -no-snapshot-load`, { windowsHide: true });
 
-        const expectedDevice = process.env.ANDROID_DEVICE_NAME || 'emulator-5554';
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 90; i++) {
             try {
                 const { stdout } = await execAsync('adb devices');
-                if (stdout.includes('emulator-')) {
-                    const match = stdout.match(/(emulator-\d+)\s+device/);
-                    const deviceId = match ? match[1] : expectedDevice;
-                    const { stdout: stateOut } = await execAsync(`adb -s ${deviceId} get-state`);
-                    if (stateOut.trim() === 'device') {
-                        break;
+                const deviceEntries = Array.from(stdout.matchAll(/(emulator-\d+)\s+(device|offline|unauthorized)/g));
+                const readyDevice = deviceEntries.find(([, , status]) => status === 'device');
+
+                if (readyDevice) {
+                    return;
+                }
+
+                if (deviceEntries.length) {
+                    const statusText = deviceEntries.map(([, id, status]) => `${id}:${status}`).join(', ');
+                    console.log(`Waiting for emulator to become ready: ${statusText}`);
+                    if (deviceEntries.some(([, , status]) => status === 'offline')) {
+                        await execAsync('adb reconnect').catch(() => {
+                            console.warn('⚠️ Failed to reconnect adb, retrying...');
+                        });
                     }
+                } else {
+                    console.log('Waiting for emulator to appear in adb devices...');
                 }
             } catch (error) {
                 console.error('Error occurred while checking emulator status:', error);
             }
             await new Promise(r => setTimeout(r, 2000));
         }
+        throw new Error(`Android emulator '${avd}' did not reach a usable device state within the expected time.`);
     }
 
     // ------------------------- Start Appium -------------------------
@@ -67,15 +78,26 @@ export class MobileApp {
             console.log('⚠️ Failed to check/kill existing Appium processes:', e);
         }
 
+        const launchAppiumProcess = (command: string, args: string[], options: any) => {
+            const proc = spawn(command, args, options);
+            proc.on('error', (err) => console.error('Appium process error:', err));
+            proc.on('exit', (code, signal) => {
+                if (code !== null && code !== 0) {
+                    console.error(`Appium process exited with code ${code} signal ${signal}`);
+                }
+            });
+            return proc;
+        };
+
         try {
             const appiumPath = require.resolve('appium');
-            this.appiumProcess = spawn(process.execPath, [appiumPath, '--port', appiumPort, '--log-level', 'error'], {
+            this.appiumProcess = launchAppiumProcess(process.execPath, [appiumPath, '--port', appiumPort, '--log-level', 'error'], {
                 stdio: 'ignore',
                 windowsHide: true,
             });
         } catch (err) {
             console.warn('⚠️ Could not resolve appium path, falling back to global npx appium:', err);
-            this.appiumProcess = spawn('npx', ['appium', '--port', appiumPort, '--log-level', 'error'], {
+            this.appiumProcess = launchAppiumProcess('npx', ['appium', '--port', appiumPort, '--log-level', 'error'], {
                 stdio: 'ignore',
                 shell: true,
                 windowsHide: true,
@@ -93,22 +115,32 @@ export class MobileApp {
             }
             await new Promise(r => setTimeout(r, 2000));
         }
+        if (this.appiumProcess) {
+            try {
+                this.appiumProcess.kill();
+            } catch {
+                // ignore
+            }
+        }
+        throw new Error(`Appium server did not become ready on port ${appiumPort} within the expected time.`);
     }
 
     // ------------------------- Helper: Verify Android env vars -------------------------
     private ensureAndroidEnv(): void {
         const androidHome = process.env.ANDROID_HOME;
         const androidSdkRoot = process.env.ANDROID_SDK_ROOT;
+        const fs = require('fs');
 
-        if (!androidHome) {
-            console.warn('⚠️ ANDROID_HOME environment variable is not set. Please set it in your .env file.');
-        } else if (!require('fs').existsSync(androidHome)) {
+        if (!androidHome && !androidSdkRoot) {
+            console.warn('⚠️ ANDROID_HOME or ANDROID_SDK_ROOT environment variable is not set. Please set one in your .env file.');
+            return;
+        }
+
+        if (androidHome && !fs.existsSync(androidHome)) {
             console.warn(`⚠️ ANDROID_HOME path "${androidHome}" does not exist.`);
         }
 
-        if (!androidSdkRoot) {
-            console.warn('⚠️ ANDROID_SDK_ROOT environment variable is not set. Please set it in your .env file.');
-        } else if (!require('fs').existsSync(androidSdkRoot)) {
+        if (androidSdkRoot && !fs.existsSync(androidSdkRoot)) {
             console.warn(`⚠️ ANDROID_SDK_ROOT path "${androidSdkRoot}" does not exist.`);
         }
     }
@@ -129,6 +161,16 @@ export class MobileApp {
         const appPackage = process.env.ANDROID_APP_PACKAGE || 'com.careboarding';
         const appActivity = process.env.ANDROID_APP_ACTIVITY || 'com.example.care_boarding.MainActivity';
         const appWaitActivity = process.env.ANDROID_APP_WAIT_ACTIVITY || 'com.example.care_boarding.MainActivity';
+        const resolvedAppPath = appPath || process.env.ANDROID_APK_PATH || '';
+
+        if (!resolvedAppPath) {
+            throw new Error('ANDROID_APK_PATH is not set and no appPath was provided. Please set ANDROID_APK_PATH in your .env file.');
+        }
+
+        const fs = require('fs');
+        if (!fs.existsSync(resolvedAppPath)) {
+            throw new Error(`APK file not found at path: ${resolvedAppPath}`);
+        }
 
         for (let attempt = 1; attempt <= 3; attempt++) {
             try {
@@ -153,7 +195,7 @@ export class MobileApp {
                         'appium:ignoreHiddenApiPolicyError': true,
                         'appium:uiautomator2ServerLaunchTimeout': 120000,
                         'appium:autoGrantPermissions': true,
-                        'appium:app': appPath || process.env.ANDROID_APK_PATH || ''
+                        'appium:app': resolvedAppPath
                     }
                 });
 
@@ -310,7 +352,6 @@ export class MobileApp {
         await this.clickCheckboxByIndex(0);
         await this.clickCheckboxByIndex(1);
     }
-
 
     // ------------------------- Patient Signature -------------------------
 
