@@ -2,7 +2,7 @@ import { remote, Browser } from 'webdriverio';
 import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 import fetch from 'node-fetch';
-import * as dotenv from 'dotenv';
+import * as dotenv from "dotenv";
 dotenv.config();
 const execAsync = (command: string, options: any = {}): Promise<{ stdout: string; stderr: string }> => {
     return promisify(exec)(command, { windowsHide: true, encoding: 'utf8', ...options }) as any;
@@ -68,7 +68,9 @@ export class MobileApp {
                         break;
                     }
                 }
-            } catch (_) { }
+            } catch (err_) {
+                console.error('Error occurred while checking emulator status:', err_);
+            }
             await new Promise(r => setTimeout(r, 2000));
         }
 
@@ -119,7 +121,9 @@ export class MobileApp {
                 if (res && res.ok) {
                     return;
                 }
-            } catch (_) { }
+            } catch (error) {
+                console.error('Error occurred while checking Appium status:', error);
+            }
             await new Promise(r => setTimeout(r, 2000));
         }
         console.warn('⚠️ Appium did not become ready within expected time');
@@ -149,7 +153,9 @@ export class MobileApp {
             try {
                 const { stdout } = await execAsync('adb devices');
                 if (stdout.includes(deviceName)) break;
-            } catch (_) { }
+            } catch (error) {
+                console.error('Error occurred while checking emulator status:', error);
+            }
             await new Promise(r => setTimeout(r, 1000));
         }
 
@@ -219,6 +225,7 @@ export class MobileApp {
                 await new Promise(r => setTimeout(r, 2000));
             }
         } catch (e) {
+            console.error('Error occurred while handling language:', e);
         }
     }
 
@@ -239,7 +246,9 @@ export class MobileApp {
                     console.log(`✅ Dismissed permission dialog using selector: ${selector}`);
                     await new Promise(r => setTimeout(r, 2000));
                 }
-            } catch (e) { }
+            } catch (error) {
+                console.error('Error occurred while dismissing permission dialog:', error);
+            }
         }
     }
 
@@ -278,7 +287,9 @@ export class MobileApp {
         await new Promise(r => setTimeout(r, 1000));
         await password.setValue(pass);
 
-        try { await this.driver.hideKeyboard(); } catch (e) { }
+        try { await this.driver.hideKeyboard(); } catch (error) {
+            console.error('Error occurred while hiding keyboard:', error);
+        }
 
         let signInBtn = await this.driver.$('android=new UiScrollable(new UiSelector().scrollable(true)).scrollIntoView(new UiSelector().description("Sign In"))');
         if (!(await signInBtn.isExisting())) {
@@ -300,7 +311,9 @@ export class MobileApp {
                 await visitsBtn.click();
                 return;
             }
-        } catch (e) { }
+        } catch (error) {
+            console.error('Error occurred while checking visits button:', error);
+        }
         const visitsBtn = await this.driver.$('android=new UiSelector().textContains("Visits")');
         await visitsBtn.waitForExist({ timeout: 15000 });
         await visitsBtn.click();
@@ -342,8 +355,8 @@ export class MobileApp {
             if (await input.isDisplayed()) {
                 await input.setValue(name);
             }
-        } catch (e: any) {
-            console.log(`⚠️ Search input not found/displayed or failed:`, e.message || e);
+        } catch (error: any) {
+            console.error('Error occurred while searching for patient:', error.message || error);
         }
     }
 

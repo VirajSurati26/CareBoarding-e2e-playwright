@@ -3,12 +3,10 @@ import { LoginPage } from '@/pageObjects/BaseClass/LoginPage';
 import { ChangeEntity } from '@/pageObjects/BaseClass/ChangeEntity';
 import { MasterSchedule } from '@/pageObjects/MasterSchedule/MasterSchedule';
 import { TEST_USERS, URLS } from '@/data/testData/testData';
-import { BaseTest } from '@/base/BaseTest';
 
 test.describe('Select patients module', () => {
   test.beforeEach(async ({ page }) => {
-    const baseTest = new BaseTest(page);
-    await baseTest.maximizeWindow();
+    await page.setViewportSize({ width: 1920, height: 1080 });
 
   });
 

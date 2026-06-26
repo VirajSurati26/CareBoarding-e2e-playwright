@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { BaseTest } from "@/base/BaseTest";
+import { LoginPage } from "@/pageObjects/BaseClass/LoginPage";
 import { TEST_USERS, URLS } from "@/data/testData/testData";
 import { ChangeEntity } from "@/pageObjects/BaseClass/ChangeEntity";
+import { BasePage } from "@/pageObjects/BaseClass/BasePage";
 import { Employee } from "@/pageObjects/Employee/Reguler_Visit_Create_Employee";
-import { LoginPage } from "@/pageObjects/BaseClass/LoginPage";
+
 
 const loginAndSelectEntity = async (page: any) => {
   const loginPage = new LoginPage(page);
@@ -11,7 +12,7 @@ const loginAndSelectEntity = async (page: any) => {
   await loginPage.goto(URLS.LOGIN);
   await loginPage.login(TEST_USERS.ADMIN_USER.username, TEST_USERS.ADMIN_USER.password);
   await changeEntity.selectEntity('Smith HHE');
-};
+};  
 
 test.describe('Select employees module', () => {
   test('Login and select entity', async ({ page }) => {
@@ -22,8 +23,8 @@ test.describe('Select employees module', () => {
 
   test.describe('after login and entity selection', () => {
     test.beforeEach(async ({ page }) => {
-      const baseTest = new BaseTest(page);
-      await baseTest.maximizeWindow();
+      const basePage = new BasePage(page);
+      await basePage.maximizeWindow();
       await loginAndSelectEntity(page);
     });
 
