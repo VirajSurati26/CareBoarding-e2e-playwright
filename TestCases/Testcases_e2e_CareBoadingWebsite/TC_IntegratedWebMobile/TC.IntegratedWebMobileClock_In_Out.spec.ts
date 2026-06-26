@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { BaseTest } from "@/base/BaseTest";
+import { BasePage } from "@/pageObjects/BaseClass/BasePage";
 import { TEST_USERS, URLS } from "@/data/testData/testData";
 import { ChangeEntity } from "@/pageObjects/BaseClass/ChangeEntity";
 import { Employee } from "@/pageObjects/Employee/Reguler_Visit_Create_Employee";
@@ -11,8 +11,8 @@ test.describe('Web to Mobile Visit Test', () => {
 
   //--------- Test Setup ---------//
   test.beforeEach(async ({ page }) => {
-    const baseTest = new BaseTest(page);
-    await baseTest.maximizeWindow();
+    const basePage = new BasePage(page);
+    await basePage.maximizeWindow();
     mobileApp = new MobileApp();
   });
 

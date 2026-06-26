@@ -39,7 +39,9 @@ export class MobileApp {
                         break;
                     }
                 }
-            } catch (e) { }
+            } catch (error) {
+                console.error('Error occurred while checking emulator status:', error);
+            }
             await new Promise(r => setTimeout(r, 2000));
         }
     }
@@ -86,7 +88,9 @@ export class MobileApp {
                 if (res && res.ok) {
                     return;
                 }
-            } catch (_) { }
+            } catch (error) {
+                console.error('Error occurred while checking Appium status:', error);
+            }
             await new Promise(r => setTimeout(r, 2000));
         }
     }
@@ -115,7 +119,9 @@ export class MobileApp {
             try {
                 const { stdout } = await execAsync('adb devices');
                 if (stdout.includes(deviceName)) break;
-            } catch (_) { }
+            } catch (error) {
+                console.error('Error occurred while checking device status:', error);
+            }
             await new Promise(r => setTimeout(r, 1000));
         }
 
@@ -158,7 +164,7 @@ export class MobileApp {
                             await execAsync(`adb -s ${deviceName} install -r "${appPath}"`);
                         }
                     } catch (installErr) {
-                        console.warn('⚠️ APK installation check failed:', installErr);
+                        console.error('Error occurred while checking APK installation:', installErr);
                     }
                 }
 
@@ -213,7 +219,9 @@ export class MobileApp {
         await new Promise(r => setTimeout(r, 1000));
         await password.setValue(pass);
 
-        try { await this.driver.hideKeyboard(); } catch (e) { }
+        try { await this.driver.hideKeyboard(); } catch (error) {
+            console.error('Error occurred while hiding keyboard:', error);
+        }
 
         let signInBtn = await this.driver.$('android=new UiScrollable(new UiSelector().scrollable(true)).scrollIntoView(new UiSelector().description("Sign In"))');
         if (!(await signInBtn.isExisting())) {
@@ -232,7 +240,9 @@ export class MobileApp {
                 await visitsBtn.click();
                 return;
             }
-        } catch (e) { }
+        } catch (error) {
+            console.error('Error occurred while checking visits button:', error);
+        }
         const visitsBtn = await this.driver.$('android=new UiSelector().textContains("Visits")');
         await visitsBtn.waitForExist({ timeout: 10000 });
         await visitsBtn.click();
@@ -395,7 +405,9 @@ export class MobileApp {
         for (let i = 0; i < maxScrolls; i++) {
             try {
                 await this.driver.$('android=new UiScrollable(new UiSelector().scrollable(true)).scrollForward()');
-            } catch (e) { }
+            } catch (error) {
+                console.error('Error occurred while scrolling:', error);
+            }
             element = await this.driver.$(xpath);
             if (await element.isExisting()) {
                 return element;

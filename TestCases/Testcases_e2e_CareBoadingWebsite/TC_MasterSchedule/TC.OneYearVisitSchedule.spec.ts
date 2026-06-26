@@ -1,11 +1,11 @@
-import { test } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { OneYearVisitSchedule } from '@/pageObjects/MasterSchedule/OneYearVisitSchedule';
-import { TEST_USERS, URLS } from '@/data/testData/testData';
-import { BaseTest } from '@/base/BaseTest';
+import { TEST_USERS } from '@/data/testData/testData';
+import { BasePage } from '@/pageObjects/BaseClass/BasePage';
 
 test.describe('One year recurring visit schedule', () => {
   test.beforeEach(async ({ page }) => {
-    const baseTest = new BaseTest(page);
+    const baseTest = new BasePage(page);
     await baseTest.maximizeWindow();
   });
 
@@ -23,6 +23,7 @@ test.describe('One year recurring visit schedule', () => {
     console.log('Recurring schedule created with:', result);
 
     expect(result).toBeTruthy();
+
     expect(result.shiftName).toBeTruthy();
     expect(result.fromDate).toMatch(/^\d{2}-\d{2}-\d{4}$/);
     expect(result.toDate).toMatch(/^\d{2}-\d{2}-\d{4}$/);

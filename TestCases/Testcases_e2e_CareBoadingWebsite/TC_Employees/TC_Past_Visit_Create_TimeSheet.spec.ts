@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { BaseTest } from "@/base/BaseTest";
+import { LoginPage } from '@/pageObjects/BaseClass/LoginPage';
+import { BasePage } from '@/pageObjects/BaseClass/BasePage';
 import { TEST_USERS, URLS } from "@/data/testData/testData";
 import { ChangeEntity } from "@/pageObjects/BaseClass/ChangeEntity";
 import { Employee } from "@/pageObjects/Employee/Past_Visit_Create_TimeSheet";
-import { LoginPage } from "@/pageObjects/BaseClass/LoginPage";
 
 const loginAndSelectEntity = async (page: any) => {
     const loginPage = new LoginPage(page);
@@ -19,8 +19,8 @@ test.describe('Select employees module', () => {
         await loginAndSelectEntity(page);
         expect(page.url()).toContain(URLS.DASHBOARD)
 
-        const baseTest = new BaseTest(page);
-        await baseTest.maximizeWindow();
+        const basePage = new BasePage(page);
+        await basePage.maximizeWindow();
         const employee = new Employee(page);
         await employee.clickEmployeeButtonsideMenu();
         await employee.clickSearchEmployeeButton();
