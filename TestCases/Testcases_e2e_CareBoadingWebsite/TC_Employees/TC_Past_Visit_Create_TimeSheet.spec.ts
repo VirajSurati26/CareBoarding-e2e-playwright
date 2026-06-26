@@ -14,13 +14,18 @@ const loginAndSelectEntity = async (page: any) => {
 };
 
 test.describe('Select employees module', () => {
-    test('Login and select entity', async ({ page }) => {
-        test.setTimeout(60000);
+    test.beforeEach(async ({ page }) => {
         await loginAndSelectEntity(page);
-        expect(page.url()).toContain(URLS.DASHBOARD)
-
         const basePage = new BasePage(page);
         await basePage.maximizeWindow();
+    });
+
+    test('Login and select entity', async ({ page }) => {
+        test.setTimeout(60000);
+        expect(page.url()).toContain(URLS.DASHBOARD);
+    });
+
+    test('Select employee and create past visit', async ({ page }) => {
         const employee = new Employee(page);
         await employee.clickEmployeeButtonsideMenu();
         await employee.clickSearchEmployeeButton();

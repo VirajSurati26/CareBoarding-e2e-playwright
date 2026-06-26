@@ -32,19 +32,15 @@ export class MobileApp {
         // Launch the requested AVD using full emulator executable path
 
         this.ensureAndroidEnv();
-        const androidHome = process.env.ANDROID_HOME;
+        const androidHome = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
         const emulatorExe = androidHome ? `${androidHome}\\emulator\\emulator.exe` : null;
         if (emulatorExe && require('fs').existsSync(emulatorExe)) {
-            // Launch using the absolute path to emulator.exe
-            const { spawn } = require('child_process');
             spawn(emulatorExe, ['-avd', avd, '-no-boot-anim', '-no-audio', '-no-snapshot-load'], {
                 windowsHide: false,
                 detached: true,
                 stdio: 'ignore',
             }).unref();
         } else {
-            // Fallback to using the emulator command from PATH
-            const { spawn } = require('child_process');
             spawn('emulator', ['-avd', avd, '-no-boot-anim', '-no-audio', '-no-snapshot-load'], {
                 windowsHide: false,
                 detached: true,
@@ -52,15 +48,14 @@ export class MobileApp {
             }).unref();
         }
 
-        // Wait until the emulator reports it is online and capture its ID
-        // Give up to ~3 minutes for the device to be ready
         for (let i = 0; i < 90; i++) {
             try {
                 const { stdout } = await execAsync('adb devices');
-                const match = stdout.match(/(emulator-\d+)\s+device/);
-                if (match) {
-                    const deviceId = match[1];
-                    // Ensure the device is fully ready
+                const deviceEntries = Array.from(stdout.matchAll(/(emulator-\d+)\s+(device|offline|unauthorized)/g));
+                const readyDevice = deviceEntries.find(([, , status]) => status === 'device');
+
+                if (readyDevice) {
+                    const deviceId = readyDevice[1];
                     await execAsync(`adb -s ${deviceId} wait-for-device`);
                     const { stdout: stateOut } = await execAsync(`adb -s ${deviceId} get-state`);
                     if (stateOut.trim() === 'device') {
@@ -68,13 +63,24 @@ export class MobileApp {
                         break;
                     }
                 }
+
+                if (deviceEntries.length) {
+                    const statusText = deviceEntries.map(([, id, status]) => `${id}:${status}`).join(', ');
+                    console.log(`Waiting for emulator to become ready: ${statusText}`);
+                    if (deviceEntries.some(([, , status]) => status === 'offline')) {
+                        await execAsync('adb reconnect').catch(() => {
+                            console.warn('⚠️ Failed to reconnect adb, retrying...');
+                        });
+                    }
+                } else {
+                    console.log('Waiting for emulator to appear in adb devices...');
+                }
             } catch (err_) {
                 console.error('Error occurred while checking emulator status:', err_);
             }
             await new Promise(r => setTimeout(r, 2000));
         }
 
-        // Return the detected emulator ID (may be null if not found)
         return this.emulatorId;
     }
 
@@ -115,6 +121,32 @@ export class MobileApp {
             });
         }
 
+        const launchAppiumProcess = (command: string, args: string[], options: any) => {
+            const proc = spawn(command, args, options);
+            proc.on('error', (err) => console.error('Appium process error:', err));
+            proc.on('exit', (code, signal) => {
+                if (code !== null && code !== 0) {
+                    console.error(`Appium process exited with code ${code} signal ${signal}`);
+                }
+            });
+            return proc;
+        };
+
+        try {
+            const appiumPath = require.resolve('appium');
+            this.appiumProcess = launchAppiumProcess(process.execPath, [appiumPath, '--port', appiumPort, '--log-level', 'error'], {
+                stdio: 'ignore',
+                windowsHide: true,
+            });
+        } catch (err) {
+            console.warn('⚠️ Could not resolve appium path, falling back to global npx appium:', err);
+            this.appiumProcess = launchAppiumProcess('npx', ['appium', '--port', appiumPort, '--log-level', 'error'], {
+                stdio: 'ignore',
+                shell: true,
+                windowsHide: true,
+            });
+        }
+
         for (let i = 0; i < 15; i++) {
             try {
                 const res = await fetch(`http://127.0.0.1:${appiumPort}/status`);
@@ -126,7 +158,14 @@ export class MobileApp {
             }
             await new Promise(r => setTimeout(r, 2000));
         }
-        console.warn('⚠️ Appium did not become ready within expected time');
+        if (this.appiumProcess) {
+            try {
+                this.appiumProcess.kill();
+            } catch {
+                // ignore
+            }
+        }
+        throw new Error(`Appium server did not become ready on port ${appiumPort} within the expected time.`);
     }
 
     // ------------------------- Helper: Verify Android env vars -------------------------

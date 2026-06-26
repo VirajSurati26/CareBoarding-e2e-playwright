@@ -1,11 +1,12 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { TEST_USERS, URLS } from "@/data/testData/testData";
 import { ChangeEntity } from "@/pageObjects/BaseClass/ChangeEntity";
 import { LoginPage } from "@/pageObjects/BaseClass/LoginPage";
 import { Visit_Review_IN_Visits_Field } from "@/pageObjects/Visits_Module/Visit_Review_In_Visits_Field";
-import { BasePage } from '@/pageObjects/BaseClass/BasePage';
+import { BasePage } from '@/pageObjects/BaseClass/BasePage';  
 
-const loginAndSelectEntity = async (page: any) => {
+
+const loginAndSelectEntity = async (page: Page) => {
     const loginPage = new LoginPage(page);
     const changeEntity = new ChangeEntity(page);
     await loginPage.goto(URLS.LOGIN);
