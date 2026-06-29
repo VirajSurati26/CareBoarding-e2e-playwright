@@ -129,15 +129,23 @@ export class Employee extends BasePage {
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.swalConfirm).click();
         const validationMessage = await this.page.locator(ALL_LOCATORS.EMPLOYEE.swalContainer).textContent();
     }
-    private getRandomPastSlot(): { start: string; end: string } {
-        const visitLengthMins = 30 + Math.floor(Math.random() * 91); // 30‑120 minutes
-        const maxPastMs = 7 * 24 * 60 * 60 * 1000; // 7 days
-        const minPastMs = 5 * 60 * 1000; // 5 minutes
-        const pastOffsetMs = minPastMs + Math.random() * (maxPastMs - minPastMs);
-        const endDate = new Date(Date.now() - pastOffsetMs);
-        const startDate = new Date(endDate.getTime() - visitLengthMins * 60 * 1000);
-        const fmt = (d: Date) => `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-        return { start: fmt(startDate), end: fmt(endDate) };
-    }
-}
 
+   async getRandomPastSlot(): Promise<{ start: string; end: string }> {
+    const visitLengthMins = 30 + Math.floor(Math.random() * 31); // 30-60 minutes
+
+    // Random end time within the last 2 hours
+    const maxPastMs = 2 * 60 * 60 * 1000; // 2 hours
+    const pastOffsetMs = Math.random() * maxPastMs;
+
+    const endDate = new Date(Date.now() - pastOffsetMs);
+    const startDate = new Date(endDate.getTime() - visitLengthMins * 60 * 1000);
+
+    const fmt = (d: Date) =>
+        `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+
+    return {
+        start: fmt(startDate),
+        end: fmt(endDate),
+    };
+   }
+}

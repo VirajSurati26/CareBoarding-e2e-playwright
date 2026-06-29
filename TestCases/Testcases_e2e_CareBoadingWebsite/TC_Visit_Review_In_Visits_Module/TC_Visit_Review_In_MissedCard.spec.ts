@@ -40,6 +40,7 @@ test('Visit Review appears in Visits module', async ({ page }) => {
   await visitReviewPage.maximizeWindow();
   await visitReviewPage.ClickINVisitInSideMenu();
   await visitReviewPage.ClickVisitReviewOption();
+  await visitReviewPage.ClickTodayOptionInCalendar();
 
   const missedCard = page.getByText('Missed', { exact: true });
   await missedCard.waitFor({ state: 'visible', timeout: 20000 });

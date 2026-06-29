@@ -23,7 +23,18 @@ export class MissedCard extends BasePage {
         await this.waitForPageLoad();
     }
 
-    
+    // Click the Today's option in the calendar and wait for navigation
+
+async ClickTodayOptionInCalendar() {
+    // Open the dropdown if it isn't already open
+    await this.page.locator('.icon-calendar-days').click();
+    await this.page.waitForTimeout(1000); // Wait for the dropdown to open
+    const todayOption = this.page.locator('li[data-range-key="Today"]');
+    await todayOption.waitFor({ state: 'visible' });
+    await todayOption.click();
+    await this.waitForPageLoad();
+}
+   
     //------------------Missed visit" card-----------------------
 
     //Click on the "Missed visit" card Visit review page
@@ -36,8 +47,13 @@ export class MissedCard extends BasePage {
         await this.page.evaluate(() => { window.scrollTo(300, document.body.scrollHeight); });
 
         //Select the create the new "Recent Scheduled Visits"
-        await this.page.locator('a.btn.btn-primary:has-text("Create New Recent Scheduled Visits")').click();
-        await this.waitForPageLoad();
+        async CreateNewRecentScheduledVisitForFirstMissedVisit() {
+                const recentCreatedTime = await this.page.locator('table tbody tr:first-child td:nth-child(8)').textContent();
+
+console.log('Recent Created Time:', recentCreatedTime?.trim());
+
+        }   
+        
 
         const sendNotification = this.page.locator('tr:nth-child(1) td:nth-child(5) button.sendNotification.ml-1');
         await sendNotification.waitFor({ state: 'visible', timeout: 20000 });
@@ -56,4 +72,8 @@ export class MissedCard extends BasePage {
     //     await this.page.locator('tr:nth-child(1) td:nth-child(5) a.btn.btn-primary.text-success.fs-14:has-text("Send Notification")').click();
     //     await this.waitForPageLoad();
     }
+
+function CreateNewRecentScheduledVisitForFirstMissedVisit() {
+    throw new Error("Function not implemented.");
+}
 

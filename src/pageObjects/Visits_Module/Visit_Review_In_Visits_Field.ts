@@ -22,6 +22,18 @@ export class Visit_Review_IN_Visits_Field extends BasePage {
         await this.waitForPageLoad();
     }
 
+async ClickTodayOptionInCalendar() {
+    // Open the dropdown if it isn't already open
+    await this.page.locator('.icon-calendar-days').click();
+
+    const todayOption = this.page.locator('li[data-range-key="Today"]');
+
+    await todayOption.waitFor({ state: 'visible' });
+    await todayOption.click();
+
+    await this.waitForPageLoad();
+}
+
     //------------------Scheduled visit" card-----------------------
 
     //Click on the "Scheduled visit" card in Visit review page
@@ -64,9 +76,6 @@ export class Visit_Review_IN_Visits_Field extends BasePage {
         await sendNotificationButton.waitFor({ state: 'visible', timeout: 20000 });
         await sendNotificationButton.click();
         await this.waitForPageLoad();
-
-        //  
-
 
     }
 
