@@ -41,19 +41,22 @@ export class Employee extends BasePage {
     }
 
     async generatePastVisitTime(): Promise<{ startTime: string; endTime: string }> {
-        const start = new Date();
+        const now = Date.now();
 
-        // Random time within the last 2 hours
-        start.setMinutes(start.getMinutes() - Math.floor(Math.random() * 120));
+        // End time: between 1 min and 1 hour ago (always in the past)
+        const safeMaxEnd = now - 1 * 60 * 1000;       // at least 1 min ago
+        const safeMinEnd = now - 1 * 60 * 60 * 1000;  // at most 1 hour ago
+        const endMs = safeMinEnd + Math.random() * (safeMaxEnd - safeMinEnd);
 
-        // Duration = 60 minutes
-        const end = new Date(start.getTime() + 60 * 60 * 1000);
+        // Visit duration: 30–60 mins
+        const visitLengthMins = 30 + Math.floor(Math.random() * 31);
+        const startMs = endMs - visitLengthMins * 60 * 1000;
 
         const format = (d: Date) =>
             `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
-        const startTime = format(start);
-        const endTime = format(end);
+        const startTime = format(new Date(startMs));
+        const endTime = format(new Date(endMs));
 
         await this.fillVisitTime(startTime, endTime);
 
@@ -65,7 +68,7 @@ export class Employee extends BasePage {
         const outTimeInput = this.page.locator(ALL_LOCATORS.EMPLOYEE.outTimeInput);
 
         await inTimeInput.waitFor({ state: 'visible', timeout: 5000 });
-        await outTimeInput.waitFor({ state: 'visible', timeout: 5000 });
+
 
         await inTimeInput.fill(startTime);
         await outTimeInput.fill(endTime);
@@ -129,23 +132,28 @@ export class Employee extends BasePage {
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.swalConfirm).click();
         const validationMessage = await this.page.locator(ALL_LOCATORS.EMPLOYEE.swalContainer).textContent();
     }
+    async getRandomPastSlot(): Promise<{ start: string; end: string }> {
 
-   async getRandomPastSlot(): Promise<{ start: string; end: string }> {
-    const visitLengthMins = 30 + Math.floor(Math.random() * 31); // 30-60 minutes
+        const now = Date.now();
 
-    // Random end time within the last 2 hours
-    const maxPastMs = 2 * 60 * 60 * 1000; // 2 hours
-    const pastOffsetMs = Math.random() * maxPastMs;
+        const visitLengthMins = 60 + Math.floor(Math.random() * 60); // 60–120 mins
 
-    const endDate = new Date(Date.now() - pastOffsetMs);
-    const startDate = new Date(endDate.getTime() - visitLengthMins * 60 * 1000);
+        const durationMs = visitLengthMins * 60 * 1000;
 
-    const fmt = (d: Date) =>
-        `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+        // 🔥 HARD SAFETY BUFFER: ensure end is always in the past
+        const safeMaxEnd = now - 1 * 60 * 1000; // at least 10 min in past
+        const safeMinEnd = now - 5 * 60 * 1000; // up to 6 hours back
 
-    return {
-        start: fmt(startDate),
-        end: fmt(endDate),
-    };
-   }
+        const endDate = new Date(
+            safeMinEnd + Math.random() * (safeMaxEnd - safeMinEnd)
+        );
+        const startDate = new Date(endDate.getTime() - durationMs);
+        const fmt = (d: Date) =>
+            `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+
+        return {
+            start: fmt(startDate),
+            end: fmt(endDate),
+        };
+    }
 }

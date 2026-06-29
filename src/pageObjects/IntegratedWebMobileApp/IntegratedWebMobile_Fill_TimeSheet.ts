@@ -10,301 +10,165 @@ const execAsync = (command: string, options: any = {}): Promise<{ stdout: string
 };
 
 export class MobileApp {
+    [x: string]: any;
     private driver!: Browser;
     private appiumProcess: any = null;
 
     // ------------------------- Start Emulator -------------------------
+
     async startEmulator(avd = process.env.AVD_NAME || 'Pixel_6a'): Promise<void> {
-        try {
-            const { stdout } = await execAsync('adb devices');
-            if (/emulator-\d+\s+device/.test(stdout) || /\tdevice\s*$/m.test(stdout)) {
-                return;
-            }
-        } catch (error) {
-            console.log('⚠️ Could not check for existing devices:', error);
+        const { stdout } = await execAsync('adb devices').catch(() => ({ stdout: '' }));
+        if (/emulator-\d+\s+device/.test(stdout)) {
+            console.log('Emulator is already running.');
+            return;
         }
 
-        const androidHome = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
-        const emulatorCmd = androidHome ? `"${androidHome}\\emulator\\emulator.exe"` : 'emulator';
-        exec(`${emulatorCmd} -avd ${avd} -no-boot-anim -no-audio -gpu host -no-snapshot-load`, { windowsHide: true });
+        const sdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
+        const cmd = sdk ? `${sdk}\\emulator\\emulator.exe` : 'emulator';
 
-        for (let i = 0; i < 90; i++) {
-            try {
-                const { stdout } = await execAsync('adb devices');
-                const deviceEntries = Array.from(stdout.matchAll(/(emulator-\d+)\s+(device|offline|unauthorized)/g));
-                const readyDevice = deviceEntries.find(([, , status]) => status === 'device');
+        console.log(`Starting emulator ${avd}...`);
+        const proc = spawn(cmd, ['-avd', avd, '-no-boot-anim', '-no-audio', '-gpu', 'host', '-no-snapshot-load'], {
+            detached: true,
+            stdio: 'ignore',
+            windowsHide: true
+        });
+        proc.unref();
 
-                if (readyDevice) {
-                    return;
-                }
-
-                if (deviceEntries.length) {
-                    const statusText = deviceEntries.map(([, id, status]) => `${id}:${status}`).join(', ');
-                    console.log(`Waiting for emulator to become ready: ${statusText}`);
-                    if (deviceEntries.some(([, , status]) => status === 'offline')) {
-                        await execAsync('adb reconnect').catch(() => {
-                            console.warn('⚠️ Failed to reconnect adb, retrying...');
-                        });
-                    }
-                } else {
-                    console.log('Waiting for emulator to appear in adb devices...');
-                }
-            } catch (error) {
-                console.error('Error occurred while checking emulator status:', error);
+        for (let i = 0; i < 30; i++) {
+            const { stdout: devices } = await execAsync('adb devices').catch(() => ({ stdout: '' }));
+            if (/emulator-\d+\s+device/.test(devices)) {
+                console.log('Emulator detected and ready.');
+                return;
             }
             await new Promise(r => setTimeout(r, 2000));
         }
-        throw new Error(`Android emulator '${avd}' did not reach a usable device state within the expected time.`);
+        throw new Error(`Android emulator '${avd}' did not reach a usable device state within time.`);
     }
 
     // ------------------------- Start Appium -------------------------
     async startAppium(): Promise<void> {
         this.ensureAndroidEnv();
-        const appiumPort = process.env.APPIUM_PORT || '4724';
-        // Find and kill any existing process listening on port
-        try {
-            const { stdout } = await execAsync('netstat -ano');
-            const lines = stdout.split('\n');
-            for (const line of lines) {
-                if (line.includes(`:${appiumPort}`)) {
-                    const parts = line.trim().split(/\s+/);
-                    const pid = parts[parts.length - 1];
-                    if (pid && pid !== '0' && !isNaN(Number(pid))) {
-                        await execAsync(`taskkill /F /PID ${pid}`).catch(() => { });
-                    }
-                }
-            }
-        } catch (e) {
-            console.log('⚠️ Failed to check/kill existing Appium processes:', e);
-        }
+        const port = process.env.APPIUM_PORT || '4724';
+        await execAsync(`npx kill-port ${port}`).catch(() => { });
 
-        const launchAppiumProcess = (command: string, args: string[], options: any) => {
-            const proc = spawn(command, args, options);
-            proc.on('error', (err) => console.error('Appium process error:', err));
-            proc.on('exit', (code, signal) => {
-                if (code !== null && code !== 0) {
-                    console.error(`Appium process exited with code ${code} signal ${signal}`);
-                }
-            });
-            return proc;
-        };
-
-        try {
-            const appiumPath = require.resolve('appium');
-            this.appiumProcess = launchAppiumProcess(process.execPath, [appiumPath, '--port', appiumPort, '--log-level', 'error'], {
-                stdio: 'ignore',
-                windowsHide: true,
-            });
-        } catch (err) {
-            console.warn('⚠️ Could not resolve appium path, falling back to global npx appium:', err);
-            this.appiumProcess = launchAppiumProcess('npx', ['appium', '--port', appiumPort, '--log-level', 'error'], {
-                stdio: 'ignore',
-                shell: true,
-                windowsHide: true,
-            });
-        }
+        this.appiumProcess = spawn('npx', ['appium', '--port', port, '--log-level', 'error'], {
+            stdio: 'ignore',
+            shell: true,
+            windowsHide: true,
+        });
 
         for (let i = 0; i < 15; i++) {
-            try {
-                const res = await fetch(`http://127.0.0.1:${appiumPort}/status`);
-                if (res && res.ok) {
-                    return;
-                }
-            } catch (error) {
-                console.error('Error occurred while checking Appium status:', error);
-            }
+            const res = await fetch(`http://127.0.0.1:${port}/status`).catch(() => null);
+            if (res?.ok) return;
             await new Promise(r => setTimeout(r, 2000));
         }
-        if (this.appiumProcess) {
-            try {
-                this.appiumProcess.kill();
-            } catch {
-                // ignore
-            }
-        }
-        throw new Error(`Appium server did not become ready on port ${appiumPort} within the expected time.`);
+        if (this.appiumProcess) this.appiumProcess.kill();
+        throw new Error(`Appium server did not become ready on port ${port}.`);
     }
 
     // ------------------------- Helper: Verify Android env vars -------------------------
     private ensureAndroidEnv(): void {
-        const androidHome = process.env.ANDROID_HOME;
-        const androidSdkRoot = process.env.ANDROID_SDK_ROOT;
-        const fs = require('fs');
-
-        if (!androidHome && !androidSdkRoot) {
-            console.warn('⚠️ ANDROID_HOME or ANDROID_SDK_ROOT environment variable is not set. Please set one in your .env file.');
-            return;
-        }
-
-        if (androidHome && !fs.existsSync(androidHome)) {
-            console.warn(`⚠️ ANDROID_HOME path "${androidHome}" does not exist.`);
-        }
-
-        if (androidSdkRoot && !fs.existsSync(androidSdkRoot)) {
-            console.warn(`⚠️ ANDROID_SDK_ROOT path "${androidSdkRoot}" does not exist.`);
+        const home = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
+        if (!home) {
+            console.warn('⚠️ ANDROID_HOME or ANDROID_SDK_ROOT environment variable is not set.');
         }
     }
 
     // ------------------------- Connect Device -------------------------
     async connectDevice(deviceName = process.env.ANDROID_DEVICE_NAME || 'emulator-5554', appPath?: string): Promise<void> {
         for (let i = 0; i < 30; i++) {
-            try {
-                const { stdout } = await execAsync('adb devices');
-                if (stdout.includes(deviceName)) break;
-            } catch (error) {
-                console.error('Error occurred while checking device status:', error);
-            }
+            const { stdout } = await execAsync('adb devices').catch(() => ({ stdout: '' }));
+            if (stdout.includes(deviceName)) break;
             await new Promise(r => setTimeout(r, 1000));
         }
 
-        const appiumPort = process.env.APPIUM_PORT || '4724';
+        const port = process.env.APPIUM_PORT || '4724';
         const appPackage = process.env.ANDROID_APP_PACKAGE || 'com.careboarding';
-        const appActivity = process.env.ANDROID_APP_ACTIVITY || 'com.example.care_boarding.MainActivity';
-        const appWaitActivity = process.env.ANDROID_APP_WAIT_ACTIVITY || 'com.example.care_boarding.MainActivity';
-        const resolvedAppPath = appPath || process.env.ANDROID_APK_PATH || '';
+        const appPathResolved = appPath || process.env.ANDROID_APK_PATH || '';
 
-        if (!resolvedAppPath) {
-            throw new Error('ANDROID_APK_PATH is not set and no appPath was provided. Please set ANDROID_APK_PATH in your .env file.');
-        }
-
-        const fs = require('fs');
-        if (!fs.existsSync(resolvedAppPath)) {
-            throw new Error(`APK file not found at path: ${resolvedAppPath}`);
-        }
-
-        for (let attempt = 1; attempt <= 3; attempt++) {
-            try {
-                this.driver = await remote({
-                    hostname: '127.0.0.1',
-                    port: parseInt(appiumPort, 10),
-                    path: '/',
-                    connectionRetryTimeout: 60000,
-                    connectionRetryCount: 3,
-                    logLevel: 'warn',
-                    capabilities: {
-                        platformName: 'Android',
-                        'appium:deviceName': deviceName,
-                        'appium:automationName': 'UiAutomator2',
-                        'appium:appPackage': appPackage,
-                        'appium:appActivity': appActivity,
-                        'appium:appWaitActivity': appWaitActivity,
-                        'appium:noReset': true,
-                        'appium:skipDeviceInitialization': false,
-                        'appium:skipServerInstallation': false,
-                        'appium:newCommandTimeout': 300,
-                        'appium:ignoreHiddenApiPolicyError': true,
-                        'appium:uiautomator2ServerLaunchTimeout': 120000,
-                        'appium:autoGrantPermissions': true,
-                        'appium:app': resolvedAppPath
-                    }
-                });
-
-                if (appPath) {
-                    try {
-                        const isInstalled = await this.driver.isAppInstalled(appPackage);
-                        if (!isInstalled) {
-                            await execAsync(`adb -s ${deviceName} install -r "${appPath}"`);
-                        }
-                    } catch (installErr) {
-                        console.error('Error occurred while checking APK installation:', installErr);
-                    }
-                }
-
-                await this.driver.launchApp();
-                await this.verifyAppLaunched();
-                return;
-            } catch (err) {
-                console.error(`❌ Attempt ${attempt} failed to create Appium session:`, err);
-                if (attempt === 3) throw err;
-                await new Promise(r => setTimeout(r, 5000));
+        this.driver = await remote({
+            hostname: '127.0.0.1',
+            port: parseInt(port, 10),
+            path: '/',
+            logLevel: 'warn',
+            capabilities: {
+                platformName: 'Android',
+                'appium:deviceName': deviceName,
+                'appium:automationName': 'UiAutomator2',
+                'appium:appPackage': appPackage,
+                'appium:appActivity': process.env.ANDROID_APP_ACTIVITY || 'com.example.care_boarding.MainActivity',
+                'appium:appWaitActivity': process.env.ANDROID_APP_WAIT_ACTIVITY || 'com.example.care_boarding.MainActivity',
+                'appium:noReset': true,
+                'appium:ignoreHiddenApiPolicyError': true,
+                'appium:autoGrantPermissions': true,
+                'appium:uiautomator2ServerLaunchTimeout': 120000,
+                'appium:app': appPathResolved
             }
-        }
+        });
+        await new Promise(r => setTimeout(r, 5000));
     }
 
     // ------------------------- Handle Language -------------------------
     async handleLanguage(): Promise<void> {
+        // Handle Android permission popup if it appears
         try {
-            let btn = await this.driver.$('android=new UiSelector().textContains("Continue")');
-            if (!(await btn.isExisting())) {
-                btn = await this.driver.$('android=new UiSelector().descriptionContains("Continue")');
+            const permBtn = await this.driver.$('//*[contains(@text, "While using the app") or contains(@text, "Allow")]');
+            if (await permBtn.isExisting()) {
+                await permBtn.click();
+                await new Promise(r => setTimeout(r, 1000));
             }
+        } catch { }
 
-            if (await btn.waitForExist({ timeout: 8000 })) {
-                await btn.click();
-                await new Promise(r => setTimeout(r, 2000));
-            }
-        } catch (e) {
-            console.log('ℹ️ Language screen not found or already passed.');
+        const btn = await this.driver.$('//*[@text="Continue" or @content-desc="Continue"]');
+        if (await btn.waitForExist({ timeout: 8000 }).catch(() => false)) {
+            await btn.click();
+            await new Promise(r => setTimeout(r, 2000));
         }
     }
 
     // ------------------------- Login -------------------------
+
     async login(user: string, pass: string): Promise<void> {
         await this.handleLanguage();
 
-        let email = await this.driver.$('android=new UiSelector().className("android.widget.EditText").instance(0)');
-        try {
-            await email.waitForExist({ timeout: 20000 });
-        } catch (e) {
-            const appPackage = process.env.ANDROID_APP_PACKAGE || 'com.careboarding';
-            const fallbackId = process.env.ANDROID_EMAIL_RESOURCE_ID || `${appPackage}:id/email`;
-            email = await this.driver.$(`android=new UiSelector().resourceId("${fallbackId}")`);
-            await email.waitForExist({ timeout: 20000 });
-        }
+        const email = await this.driver.$('android=new UiSelector().className("android.widget.EditText").instance(0)');
+        await email.waitForExist({ timeout: 15000 });
         await email.click();
-        await new Promise(r => setTimeout(r, 1000));
-        await email.setValue(user);
+        await email.setValue(user);     
 
-        const password = await this.driver.$('android=new UiSelector().className("android.widget.EditText").instance(1)');
-        await password.waitForExist({ timeout: 5000 });
-        await password.click();
-        await new Promise(r => setTimeout(r, 1000));
-        await password.setValue(pass);
+        const pwd = await this.driver.$('android=new UiSelector().className("android.widget.EditText").instance(1)');
+        await pwd.waitForExist({ timeout: 10000 });
+        await pwd.click();
+        await pwd.setValue(pass);
+        await this.driver.hideKeyboard().catch(() => { });
 
-        try { await this.driver.hideKeyboard(); } catch (error) {
-            console.error('Error occurred while hiding keyboard:', error);
-        }
-
-        let signInBtn = await this.driver.$('android=new UiScrollable(new UiSelector().scrollable(true)).scrollIntoView(new UiSelector().description("Sign In"))');
-        if (!(await signInBtn.isExisting())) {
-            signInBtn = await this.driver.$('android=new UiSelector().description("Sign In")');
-        }
-        await signInBtn.waitForExist({ timeout: 10000 });
-        await signInBtn.click();
+        const signIn = await this.driver.$('//*[@content-desc="Sign In" or @text="Sign In"]');
+        await signIn.click();
         await new Promise(r => setTimeout(r, 10000));
     }
 
     // ------------------------- Go to the "Visits" Screen -------------------------
     async goToVisits(): Promise<void> {
-        try {
-            const visitsBtn = await this.driver.$('android=new UiSelector().descriptionContains("Visits")');
-            if (await visitsBtn.waitForExist({ timeout: 2000 })) {
-                await visitsBtn.click();
-                return;
-            }
-        } catch (error) {
-            console.error('Error occurred while checking visits button:', error);
-        }
-        const visitsBtn = await this.driver.$('android=new UiSelector().textContains("Visits")');
-        await visitsBtn.waitForExist({ timeout: 10000 });
-        await visitsBtn.click();
-    }
-
-    // ------------------------- Search Patient -------------------------
-    async searchPatient(name: string): Promise<void> {
-        const input = await this.driver.$('android=new UiSelector().resourceId("searchInput")');
-        if (await input.isDisplayed()) await input.setValue(name);
+        const btn = await this.driver.$('//*[contains(@content-desc, "Visits") or contains(@text, "Visits")]');
+        await btn.waitForExist({ timeout: 20000 });
+        await btn.click();
     }
 
     // ------------------------- Check Visit Exists -------------------------
     async checkVisitExists(name: string, visitTime?: string): Promise<boolean> {
-        const clean = this.cleanPatientName(name);
         if (visitTime) {
             const selector = `//*[contains(@text, "${visitTime}") or contains(@content-desc, "${visitTime}")]`;
             const existsByTime = await this.driver.$(selector).isExisting().catch(() => false);
             if (existsByTime) return true;
         }
-        return (await this.driver.$(`//*[contains(@text, "${clean}") or contains(@content-desc, "${clean}")]`)).isExisting().catch(() => false);
+
+        const variations = this.getNameVariations(name);
+        for (const val of variations) {
+            const selector = `//*[contains(@text, "${val}") or contains(@content-desc, "${val}")]`;
+            const exists = await this.driver.$(selector).isExisting().catch(() => false);
+            if (exists) return true;
+        }
+        return false;
     }
 
     // ------------------------- Find Recent Visit -------------------------
@@ -325,10 +189,8 @@ export class MobileApp {
     }
 
     // ------------------------- Click Visit -------------------------
-
     async clickVisit(patientName: string, visitTime?: string): Promise<void> {
         let selector = '';
-        const clean = this.cleanPatientName(patientName);
         if (visitTime) {
             selector = `//*[contains(@text, "${visitTime}") or contains(@content-desc, "${visitTime}")]`;
             const el = await this.driver.$(selector);
@@ -338,167 +200,21 @@ export class MobileApp {
             }
         }
 
-        selector = `//*[contains(@text, "${clean}") or contains(@content-desc, "${clean}")]`;
+        const variations = this.getNameVariations(patientName);
+        for (const val of variations) {
+            selector = `//*[contains(@text, "${val}") or contains(@content-desc, "${val}")]`;
+            const el = await this.driver.$(selector);
+            if (await el.isExisting()) {
+                await el.click();
+                return;
+            }
+        }
+
+        const firstVal = variations[0];
+        selector = `//*[contains(@text, "${firstVal}") or contains(@content-desc, "${firstVal}")]`;
         const el = await this.driver.$(selector);
         await el.waitForExist({ timeout: 10000 });
         await el.click();
     }
 
-    // ------------------------- Client Verification -------------------------
-
-    async clientVerification(): Promise<void> {
-        await this.driver.$('android=new UiScrollable(new UiSelector().scrollable(true).instance(0)).scrollIntoView(new UiSelector().text("Time Verified"))');
-        await new Promise(r => setTimeout(r, 1000));
-        await this.clickCheckboxByIndex(0);
-        await this.clickCheckboxByIndex(1);
-    }
-
-    // ------------------------- Patient Signature -------------------------
-
-    async scrollToDrawCanvas(): Promise<void> {
-
-        // Scroll until we find DrawCanvas or scroll limit
-        let canvasFound = false;
-        let attempts = 0;
-        const maxAttempts = 20;
-
-        while (!canvasFound && attempts < maxAttempts) {
-            try {
-                const canvas = await this.driver.$('android=new UiSelector().description("DrawCanvas")');
-                if (await canvas.isExisting()) {
-                    canvasFound = true;
-                    break;
-                }
-            } catch (error) {
-                // Ignore error and try scrolling
-            }
-
-            // Try scrolling forward
-            try { await this.driver.$('android=new UiScrollable(new UiSelector().scrollable(true)).scrollForward()'); } catch (e) { /* ignore scroll errors */ }
-            await new Promise(r => setTimeout(r, 500));
-            attempts++;
-        }
-        if (!canvasFound) {
-            console.log('⚠️ DrawCanvas not found after scrolling');
-        }
-    }
-
-    async patientsSignature(): Promise<void> {
-
-        // Click the checkbox, scrolling if necessary to find it
-        const checkbox = await this.findScrollableCheckbox('//android.widget.ScrollView/android.view.View[11]');
-        await checkbox.click();
-        await new Promise(r => setTimeout(r, 1000));
-
-        // Try to find DrawCanvas, scrolling if necessary
-        await this.scrollToDrawCanvas();
-
-        let canvas = await this.driver.$('android=new UiSelector().description("DrawCanvas")');
-        try {
-            await canvas.waitForExist({ timeout: 5000 });
-        } catch (error) {
-            canvas = await this.driver.$('//android.widget.ImageView');
-            await canvas.waitForExist({ timeout: 5000 });
-        }
-
-        if (await canvas.isExisting()) {
-            const loc = await canvas.getLocation();
-            const size = await canvas.getSize();
-
-            await this.driver.performActions([{
-                type: 'pointer',
-                id: 'finger',
-                parameters: { pointerType: 'touch' },
-                actions: [
-                    { type: 'pointerMove', duration: 0, x: loc.x + 30, y: loc.y + 50 },
-                    { type: 'pointerDown', button: 0 },
-                    { type: 'pointerMove', duration: 200, x: loc.x + size.width - 30, y: loc.y + size.height - 50 },
-                    { type: 'pointerUp', button: 0 }
-                ]
-            }]);
-        } else {
-            console.log('⚠️ Could not find canvas, drawing skipped');
-        }
-    }
-
-    // ------------------------- Click Checkbox By Index -------------------------
-
-    async clickCheckboxByIndex(index: number): Promise<void> {
-        const checkbox = await this.driver.$(`android=new UiSelector().className("android.widget.CheckBox").instance(${index})`);
-        if (await checkbox.isExisting()) {
-            await checkbox.click();
-            await new Promise(r => setTimeout(r, 500));
-        } else {
-            console.log('⚠️ Checkbox not found at index ' + index);
-        }
-    }
-
-    // ------------------------- Find Scrollable Checkbox -------------------------
-
-    private async findScrollableCheckbox(xpath: string): Promise<any> {
-        // Attempt to locate the element directly
-        let element = await this.driver.$(xpath);
-        if (await element.isExisting()) {
-            return element;
-        }
-        // If not found, try scrolling a few times
-        const maxScrolls = 5;
-        for (let i = 0; i < maxScrolls; i++) {
-            try {
-                await this.driver.$('android=new UiScrollable(new UiSelector().scrollable(true)).scrollForward()');
-            } catch (error) {
-                console.error('Error occurred while scrolling:', error);
-            }
-            element = await this.driver.$(xpath);
-            if (await element.isExisting()) {
-                return element;
-            }
-        }
-        // Return element (may not exist) for caller to handle
-        return element;
-    }
-
-    // ------------------------- Save Button -------------------------
-
-    async saveButton(): Promise<void> {
-        const button = await this.driver.$('//*[@content-desc="Save" or @text="Save"]');
-        await button.waitForExist({ timeout: 10000 });
-        await button.click();
-    }
-
-    // ------------------------- Ok Button -------------------------
-
-    async okButton(): Promise<void> {
-        const button = await this.driver.$('//*[@content-desc="Ok" or @text="Ok"]');
-        await button.waitForExist({ timeout: 10000 });
-        await button.click();
-    }
-
-    // ------------------------- Patient Name Cleaning Helper -------------------------
-    cleanPatientName(name: string): string {
-        const parts = name.split('(')[0].split(',').map(p => p.trim());
-        return parts.length > 1 ? `${parts[1]} ${parts[0]}` : parts[0];
-    }
-
-    // ------------------------- Close Device -------------------------
-    async closeDevice(): Promise<void> {
-        if (this.driver) await this.driver.deleteSession().catch(() => { });
-        if (this.appiumProcess) {
-            try {
-                this.appiumProcess.kill();
-            } catch (e) {
-                console.log('⚠️ Failed to kill Appium process:', e);
-            }
-        }
-    }
-
-    // ------------------------- Verify App Launched -------------------------
-
-    async verifyAppLaunched(): Promise<void> {
-        try {
-            await this.driver.pause(2000);
-        } catch (e) {
-            console.warn('⚠️ Verification of mobile app failed', e);
-        }
-    }
 }

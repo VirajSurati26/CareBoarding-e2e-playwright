@@ -3,6 +3,7 @@ import { TEST_USERS, URLS } from '@/data/testData/testData';
 import { ChangeEntity } from '@/pageObjects/BaseClass/ChangeEntity';
 import { LoginPage } from '@/pageObjects/BaseClass/LoginPage';
 import { Visit_Review_IN_Visits_Field } from '@/pageObjects/Visits_Module/Visit_Review_In_Visits_Field';
+import { MissedCard } from '@/pageObjects/Visit_Review_In_Visits_Module/Visit_Review_In_MissedCard';
 import { Employee } from '@/pageObjects/Employee/Past_Visit_Create_TimeSheet';
 
 const VisitReviewPage = async (page: any) => {
@@ -46,5 +47,8 @@ test('Visit Review appears in Visits module', async ({ page }) => {
   await missedCard.waitFor({ state: 'visible', timeout: 20000 });
 
   // Verify and select the "Missed visit" card in Visit review page
-  await visitReviewPage.ClickMissedVisitcard();
+  const missedCardPage = new MissedCard(page);
+  await missedCardPage.ClickMissedVisitcard();
+  await missedCardPage.CreateNewRecentScheduledVisitForFirstMissedVisit();
+
 });
