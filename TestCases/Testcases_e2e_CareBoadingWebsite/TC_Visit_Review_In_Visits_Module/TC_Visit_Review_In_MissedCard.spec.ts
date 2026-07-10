@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { TEST_USERS, URLS } from '@/data/testData/testData';
 import { ChangeEntity } from '@/pageObjects/BaseClass/ChangeEntity';
 import { LoginPage } from '@/pageObjects/BaseClass/LoginPage';
-import { Visit_Review_IN_Visits_Field } from '@/pageObjects/Visits_Module/Visit_Review_In_Visits_Field';
+import { Visit_Review_In_Visits_Field } from '@/pageObjects/Visits_Module/Visit_Review_In_Visits_Field';
 import { MissedCard } from '@/pageObjects/Visit_Review_In_Visits_Module/Visit_Review_In_MissedCard';
 import { Employee } from '@/pageObjects/Employee/Past_Visit_Create_TimeSheet';
 
@@ -37,7 +37,7 @@ test('Visit Review appears in Visits module', async ({ page }) => {
   test.setTimeout(120000);
   await VisitReviewPage(page);
 
-  const visitReviewPage = new Visit_Review_IN_Visits_Field(page);
+  const visitReviewPage = new Visit_Review_In_Visits_Field(page);
   await visitReviewPage.maximizeWindow();
   await visitReviewPage.ClickINVisitInSideMenu();
   await visitReviewPage.ClickVisitReviewOption();

@@ -75,8 +75,9 @@ export function convertAmPmTo24Hour(timeAmPm: string): string {
         throw new Error(`Invalid time format: ${timeAmPm}. Expected format: HH:MM AM/PM`);
     }
     
-    let [, hours, minutes, period] = match;
-    period = period.toUpperCase();
+    const [, hours, period] = match;
+    const minutes = match[2];
+    const periodUpper = period.toUpperCase();
     
     let hour24 = parseInt(hours);
     if (period === 'PM' && hour24 !== 12) {
@@ -95,7 +96,7 @@ export function convert24HourToAmPm(time24: string): string {
         throw new Error(`Invalid 24-hour time format: ${time24}`);
     }
     
-    let [, hours, minutes] = match;
+    const [, hours, minutes] = match;
     const hour24 = parseInt(hours);
     const period = hour24 >= 12 ? 'PM' : 'AM';
     let hour12 = hour24 % 12;
