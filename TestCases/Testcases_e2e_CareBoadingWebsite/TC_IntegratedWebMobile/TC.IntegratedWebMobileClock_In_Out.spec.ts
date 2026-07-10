@@ -95,10 +95,10 @@ test.describe('Web to Mobile Visit Test', () => {
         console.log('Starting Appium server...');
         await mobileApp.startAppium();
 
-        const appPath = process.env.ANDROID_APK_PATH || 'C:\\Users\\Admin\\eclipse-workspace\\Prod_Careboarding_Parallel_Tests_WebApp\\src\\test\\java\\CareBoarding_Resource\\CareBoarding-EVV-Prod-1_1_8_130 (1).apk';
+        const appPath = process.env.ANDROID_APK_PATH;
         const deviceId = process.env.ANDROID_DEVICE_ID || 'emulator-5554';
-        if (!process.env.ANDROID_APK_PATH) {
-          console.warn('⚠️ ANDROID_APK_PATH not set, using default:', appPath);
+        if (!appPath) {
+          throw new Error('ANDROID_APK_PATH is not set. Add ANDROID_APK_PATH to your .env file pointing to the APK file.');
         }
 
         await mobileApp.connectDevice(deviceId, appPath);

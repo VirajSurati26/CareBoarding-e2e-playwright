@@ -1,21 +1,34 @@
 import { remote, Browser } from 'webdriverio';
-import { exec, spawn } from 'child_process';
+import { ChildProcessWithoutNullStreams, exec, ExecOptionsWithStringEncoding, spawn, SpawnOptions } from 'child_process';
 import { promisify } from 'util';
 import fetch from 'node-fetch';
 import * as dotenv from "dotenv";
 dotenv.config();
-const execAsync = (command: string, options: any = {}): Promise<{ stdout: string; stderr: string }> => {
-    return promisify(exec)(command, { windowsHide: true, encoding: 'utf8', ...options }) as any;
+
+interface ExecAsyncResult {
+    stdout: string;
+    stderr: string;
+}
+
+interface ExecAsyncOptions extends ExecOptionsWithStringEncoding {
+    windowsHide?: boolean;
+}
+
+interface AppiumProcess extends ChildProcessWithoutNullStreams {}
+interface LaunchAppiumOptions extends SpawnOptions {}
+
+const execAsync = (command: string, options: ExecAsyncOptions = {}): Promise<ExecAsyncResult> => {
+    return promisify(exec)(command, { windowsHide: true, encoding: 'utf8', ...options }) as Promise<ExecAsyncResult>;
 };
 
 export class MobileApp {
     private driver!: Browser;
-    private appiumProcess: any = null;
+    private appiumProcess: AppiumProcess | null = null;
     private emulatorId: string | null = null;
 
     // ------------------------- Start Emulator -------------------------
 
-    async startEmulator(avd = process.env.AVD_NAME || 'Pixel_6a'): Promise<string | null> {
+    async startEmulator(avd = process.env.ANDROID_EMULATOR_AVD_NAME || process.env.AVD_NAME || 'Pixel_4_API_30'): Promise<string | null> {
         // Check if an emulator/device is already running
         try {
             const { stdout } = await execAsync('adb devices');
@@ -86,44 +99,15 @@ export class MobileApp {
 
     // ------------------------- Start Appium -------------------------
     async startAppium(): Promise<void> {
-        // Ensure Android SDK environment variables are set
         this.ensureAndroidEnv();
         const appiumPort = process.env.APPIUM_PORT || '4724';
-        // Find and kill any existing process listening on port
-        try {
-            const { stdout } = await execAsync('netstat -ano');
-            const lines = stdout.split('\n');
-            for (const line of lines) {
-                if (line.includes(`:${appiumPort}`)) {
-                    const parts = line.trim().split(/\s+/);
-                    const pid = parts[parts.length - 1];
-                    if (pid && pid !== '0' && !isNaN(Number(pid))) {
-                        await execAsync(`taskkill /F /PID ${pid}`).catch(() => { });
-                    }
-                }
-            }
-        } catch (e) {
-            console.log('⚠️ Failed to check/kill existing Appium processes:', e);
-        }
 
-        try {
-            const appiumPath = require.resolve('appium');
-            this.appiumProcess = spawn(process.execPath, [appiumPath, '--port', appiumPort, '--log-level', 'error'], {
-                stdio: 'ignore',
-                windowsHide: true,
-            });
-        } catch (err) {
-            console.warn('⚠️ Could not resolve appium path, falling back to global npx appium:', err);
-            this.appiumProcess = spawn('npx', ['appium', '--port', appiumPort, '--log-level', 'error'], {
-                stdio: 'ignore',
-                shell: true,
-                windowsHide: true,
-            });
-        }
+        await execAsync(`npx kill-port ${appiumPort}`).catch(() => { });
 
+        const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
         const launchAppiumProcess = (command: string, args: string[], options: any) => {
             const proc = spawn(command, args, options);
-            proc.on('error', (err) => console.error('Appium process error:', err));
+            proc.on('error', err => console.error('Appium process error:', err));
             proc.on('exit', (code, signal) => {
                 if (code !== null && code !== 0) {
                     console.error(`Appium process exited with code ${code} signal ${signal}`);
@@ -135,37 +119,26 @@ export class MobileApp {
         try {
             const appiumPath = require.resolve('appium');
             this.appiumProcess = launchAppiumProcess(process.execPath, [appiumPath, '--port', appiumPort, '--log-level', 'error'], {
-                stdio: 'ignore',
+                stdio: ['ignore', 'pipe', 'pipe'],
                 windowsHide: true,
             });
         } catch (err) {
             console.warn('⚠️ Could not resolve appium path, falling back to global npx appium:', err);
-            this.appiumProcess = launchAppiumProcess('npx', ['appium', '--port', appiumPort, '--log-level', 'error'], {
-                stdio: 'ignore',
-                shell: true,
+            this.appiumProcess = launchAppiumProcess(npxCommand, ['appium', '--port', appiumPort, '--log-level', 'error'], {
+                stdio: ['ignore', 'pipe', 'pipe'],
+                shell: false,
                 windowsHide: true,
             });
         }
 
-        for (let i = 0; i < 15; i++) {
-            try {
-                const res = await fetch(`http://127.0.0.1:${appiumPort}/status`);
-                if (res && res.ok) {
-                    return;
-                }
-            } catch (error) {
-                console.error('Error occurred while checking Appium status:', error);
-            }
-            await new Promise(r => setTimeout(r, 2000));
+        if (!this.appiumProcess) {
+            throw new Error('Failed to spawn Appium process. Check that Appium is installed locally or globally.');
         }
-        if (this.appiumProcess) {
-            try {
-                this.appiumProcess.kill();
-            } catch {
-                // ignore
-            }
-        }
-        throw new Error(`Appium server did not become ready on port ${appiumPort} within the expected time.`);
+
+        this.appiumProcess.stdout.on('data', data => console.log(`[appium stdout] ${data.toString().trim()}`));
+        this.appiumProcess.stderr.on('data', data => console.error(`[appium stderr] ${data.toString().trim()}`));
+
+        await this.waitForAppiumReady(appiumPort);
     }
 
     // ------------------------- Helper: Verify Android env vars -------------------------
@@ -184,6 +157,33 @@ export class MobileApp {
         } else if (!require('fs').existsSync(androidSdkRoot)) {
             console.warn(`⚠️ ANDROID_SDK_ROOT path "${androidSdkRoot}" does not exist.`);
         }
+    }
+
+    private async waitForAppiumReady(port: string): Promise<void> {
+        for (let i = 0; i < 30; i++) {
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 5000);
+                const res = await fetch(`http://127.0.0.1:${port}/status`, { signal: controller.signal });
+                clearTimeout(timeout);
+                if (res && res.ok) {
+                    console.log(`Appium is ready on port ${port}.`);
+                    return;
+                }
+            } catch (error) {
+                console.error('Waiting for Appium status failed:', error);
+            }
+            await new Promise(r => setTimeout(r, 2000));
+        }
+
+        if (this.appiumProcess) {
+            try {
+                this.appiumProcess.kill();
+            } catch {
+                // ignore
+            }
+        }
+        throw new Error(`Appium server did not become ready on port ${port} within the expected time.`);
     }
 
     // ------------------------- Connect Device -------------------------
@@ -420,7 +420,6 @@ export class MobileApp {
     async findRecentVisit(empName: string, patientName: string, visitTime?: string): Promise<boolean> {
         await this.goToVisits();
         await new Promise(r => setTimeout(r, 5000));
-
         await this.searchPatient(patientName);
         await new Promise(r => setTimeout(r, 5000));
 
@@ -537,6 +536,7 @@ export class MobileApp {
     }
 
     // ------------------------- Click Checkbox By Index -------------------------
+    
     async clickCheckboxByIndex(index: number): Promise<void> {
 
         const checkbox = await this.driver.$(`android=new UiSelector().className("android.widget.CheckBox").instance(${index})`);
