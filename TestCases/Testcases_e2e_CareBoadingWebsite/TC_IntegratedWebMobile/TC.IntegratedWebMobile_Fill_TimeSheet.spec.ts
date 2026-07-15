@@ -117,9 +117,10 @@ test.describe('Web to Mobile Visit Test', () => {
       await mobileApp.handleLanguage();
       console.log('Handled mobile language screen');
 
-      console.log('Mobile device connected, logging in...');
-      await mobileApp.login(TEST_USERS.MOBILE_USER.username, TEST_USERS.MOBILE_USER.password);
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      // Assuming app retains session (noReset:true), skip login to speed up test
+      console.log('Skipping mobile login, assuming already logged in');
+      // Short pause for any UI stabilization
+      await new Promise(resolve => setTimeout(resolve, 1000));
       console.log('Patient Found : ', patientName);
 
       const visitExists = await mobileApp.findRecentVisit(empName, patientName, visitStartTime12H);

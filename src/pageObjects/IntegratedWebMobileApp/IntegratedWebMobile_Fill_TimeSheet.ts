@@ -94,7 +94,7 @@ export class MobileApp {
         console.log(`Starting Appium server using ${npxCommand}`);
         this.appiumProcess = spawn(npxCommand, ['appium', '--port', port, '--log-level', 'error'], {
             stdio: ['pipe', 'pipe', 'pipe'],
-            shell: false,
+            shell: true,
             windowsHide: true,
         });
 
