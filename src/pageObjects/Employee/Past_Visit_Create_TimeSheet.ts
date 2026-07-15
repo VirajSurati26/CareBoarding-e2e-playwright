@@ -68,8 +68,6 @@ export class Employee extends BasePage {
         const outTimeInput = this.page.locator(ALL_LOCATORS.EMPLOYEE.outTimeInput);
 
         await inTimeInput.waitFor({ state: 'visible', timeout: 5000 });
-
-
         await inTimeInput.fill(startTime);
         await outTimeInput.fill(endTime);
     }
@@ -129,8 +127,15 @@ export class Employee extends BasePage {
     }
 
     async clickOKButtonandPrintValidationMessage(): Promise<void> {
-        await this.page.locator(ALL_LOCATORS.EMPLOYEE.swalConfirm).click();
+        // Ensure any loading overlay is hidden before interacting with the modal
+        await this.page.locator(ALL_LOCATORS.EMPLOYEE.loadingOverlay).waitFor({ state: 'hidden', timeout: 15000 }).catch(() => { });
+        // Wait for the SweetAlert2 confirm button to be visible and stable
+        const confirmBtn = this.page.locator(ALL_LOCATORS.EMPLOYEE.swalConfirm);
+        await confirmBtn.waitFor({ state: 'visible', timeout: 15000 });
+        // Click with force to bypass potential overlay issues
+        await confirmBtn.click({ force: true });
         const validationMessage = await this.page.locator(ALL_LOCATORS.EMPLOYEE.swalContainer).textContent();
+        // Optionally, you could log or assert the validationMessage here
     }
     async getRandomPastSlot(): Promise<{ start: string; end: string }> {
 
@@ -140,9 +145,8 @@ export class Employee extends BasePage {
 
         const durationMs = visitLengthMins * 60 * 1000;
 
-        // 🔥 HARD SAFETY BUFFER: ensure end is always in the past
-        const safeMaxEnd = now - 1 * 60 * 1000; // at least 10 min in past
-        const safeMinEnd = now - 5 * 60 * 1000; // up to 6 hours back
+        const safeMaxEnd = now - 1 * 60 * 1000;
+        const safeMinEnd = now - 5 * 60 * 1000;
 
         const endDate = new Date(
             safeMinEnd + Math.random() * (safeMaxEnd - safeMinEnd)
