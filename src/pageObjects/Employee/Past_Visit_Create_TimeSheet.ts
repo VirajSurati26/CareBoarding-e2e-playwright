@@ -127,16 +127,9 @@ export class Employee extends BasePage {
     }
 
     async clickOKButtonandPrintValidationMessage(): Promise<void> {
-        // Ensure any loading overlay is hidden before interacting with the modal
-        await this.page.locator(ALL_LOCATORS.EMPLOYEE.loadingOverlay).waitFor({ state: 'hidden', timeout: 15000 }).catch(() => { });
-        // Wait for the SweetAlert2 confirm button to be visible and stable
-        const confirmBtn = this.page.locator(ALL_LOCATORS.EMPLOYEE.swalConfirm);
-        await confirmBtn.waitFor({ state: 'visible', timeout: 15000 });
-        // Click with force to bypass potential overlay issues
-        await confirmBtn.click({ force: true });
-        const validationMessage = await this.page.locator(ALL_LOCATORS.EMPLOYEE.swalContainer).textContent();
-        // Optionally, you could log or assert the validationMessage here
+        await this.page.getByRole('button', { name: 'OK' }).click();
     }
+
     async getRandomPastSlot(): Promise<{ start: string; end: string }> {
 
         const now = Date.now();

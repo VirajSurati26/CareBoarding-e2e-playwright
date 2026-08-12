@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { LoginPage } from '@/pageObjects/BaseClass/LoginPage';
 import { ChangeEntity } from '@/pageObjects/BaseClass/ChangeEntity';
 import { Employee } from '@/pageObjects/Employee/Past_Visit_Create_TimeSheet';
-import { MobileApp } from '@/pageObjects/IntegratedWebMobileApp/IntegratedWebMobile_Fill_TimeSheet';
+import { MobileApp } from '@/pageObjects/IntegratedWebMobileApp/IntegratedWebMobileClock_In_Out';
 import { BasePage } from '@/pageObjects/BaseClass/BasePage';
 import { MissedCard } from '@/pageObjects/Visit_Review_In_Visits_Module/Visit_Review_In_MissedCard';
 import { TEST_USERS, URLS } from '@/data/testData/testData';
@@ -73,7 +73,8 @@ test.describe('Web to Mobile Visit Test', () => {
 
     await loginPage.goto(URLS.LOGIN);
     await loginPage.login(TEST_USERS.ADMIN_USER.username, TEST_USERS.ADMIN_USER.password);
-    await changeEntity.selectEntity('Smith HHE');
+    await changeEntity.selectEntity('Pennsylvania (PA)');
+    await changeEntity.selectAreYouSureConfirmButton();
     await employee.clickEmployeeButtonsideMenu();
     await employee.clickSearchEmployeeButton();
     const empName = await employee.selectAndOpenEmployee(0);
@@ -91,17 +92,14 @@ test.describe('Web to Mobile Visit Test', () => {
     await visitReviewPage.ClickINVisitInSideMenu();
     await visitReviewPage.ClickVisitReviewOption();
     await visitReviewPage.ClickTodayOptionInCalendar();
-
     const missedCard = page.getByText('Missed', { exact: true });
     await missedCard.waitFor({ state: 'visible', timeout: 20000 });
-
     const missedCardPage = new MissedCard(page);
     await missedCardPage.ClickMissedVisitcard();
     await missedCardPage.CreateNewRecentScheduledVisitForFirstMissedVisit();
-
     const patientName = normalizePatientName(rawPatientName);
     const visitStartTime12H = formatTo12Hour(startTime);
-
+    
     try {
       console.log('Starting Android emulator...');
       await mobileApp.startEmulator();
@@ -114,13 +112,8 @@ test.describe('Web to Mobile Visit Test', () => {
       }
 
       await mobileApp.connectDevice(deviceId, appPath);
-      await mobileApp.handleLanguage();
-      console.log('Handled mobile language screen');
-
-      // Assuming app retains session (noReset:true), skip login to speed up test
-      console.log('Skipping mobile login, assuming already logged in');
-      // Short pause for any UI stabilization
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('Mobile device connected, logging in if needed...');
+      await mobileApp.login(TEST_USERS.MOBILE_USER.username, TEST_USERS.MOBILE_USER.password);
       console.log('Patient Found : ', patientName);
 
       const visitExists = await mobileApp.findRecentVisit(empName, patientName, visitStartTime12H);

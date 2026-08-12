@@ -36,7 +36,8 @@ test.describe('Web to Mobile Visit Test', () => {
 
       await loginPage.goto(URLS.LOGIN);
       await loginPage.login(TEST_USERS.ADMIN_USER.username, TEST_USERS.ADMIN_USER.password);
-      await changeEntity.selectEntity('Smith HHE');
+      await changeEntity.selectEntity('Pennsylvania (PA)');
+      await changeEntity.selectAreYouSureConfirmButton();
 
       await employee.clickEmployeeButtonsideMenu();
       await employee.clickSearchEmployeeButton();

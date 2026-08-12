@@ -15,19 +15,14 @@ test.describe('Change Entity Module', () => {
     await baseTest.waitForNetworkIdle();
     expect(page.url()).toContain(URLS.DASHBOARD);
   });
-
-  test('should select Smith HHE entity', async ({ page }) => {
+  test('should select Pennsylvania (PA) entity', async ({ page }) => {
     const changeEntity = new ChangeEntity(page);
     const initialEntity = await changeEntity.getCurrentEntity();
-    await changeEntity.selectEntity('Smith HHE');
+    await changeEntity.selectEntity('Pennsylvania (PA)');
     const newEntity = await changeEntity.getCurrentEntity();
-    expect(newEntity).toBe('Smith HHE');
+    expect(newEntity).toBe('Pennsylvania (PA)');
+    const entities = await changeEntity.getAvailableEntities();
+    expect(entities).toContain('Pennsylvania (PA)');
+    await changeEntity.selectAreYouSureConfirmButton();
   });
-
-  // test('should get available entities', async ({ page }) => {
-  //   const changeEntity = new ChangeEntity(page);
-  //   const entities = await changeEntity.getAvailableEntities();
-  //   expect(entities.length).toBeGreaterThan(0);
-  // });
-
-});
+}); 

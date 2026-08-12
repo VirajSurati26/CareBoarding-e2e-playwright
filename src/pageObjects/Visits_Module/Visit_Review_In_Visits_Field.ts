@@ -9,44 +9,45 @@ export class Visit_Review_IN_Visits_Field extends BasePage {
     }
 
     // Click on the "Visit Review" option in the side menu
-    // Click the "Visits" entry in the side menu and wait for navigation
+    
     async ClickINVisitInSideMenu() {
         // Wait for potential SweetAlert2 overlay to disappear (if present)
         const overlay = this.page.locator('.swal2-container');
         if (await overlay.isVisible().catch(() => false)) {
             await overlay.waitFor({ state: 'hidden', timeout: 8000 });
         }
+        
         // Click the Visits link; force click in case of minor obstruction
         await this.page.locator('a.nav-link:has-text("Visits")').first().click({ force: true });
-        // Ensure the navigation finishes before proceeding
         await this.waitForPageLoad();
     }
 
     // Click the "Visit Review" option in the side menu and wait for navigation
     async ClickVisitReviewOption() {
-        // Ensure any SweetAlert2 overlay is gone
         const overlay = this.page.locator('.swal2-container');
-        try {
-            await overlay.waitFor({ state: 'hidden', timeout: 8000 });
-        } catch (e) {
-            // ignore if not present
-        }
+        await overlay.waitFor({ state: 'hidden', timeout: 8000 });
         const link = this.page.locator('a.nav-link[href*="/admin/visits/index"]').first();
-        await link.waitFor({ state: 'visible', timeout: 10000 });
-        await link.scrollIntoViewIfNeeded();
-        await link.click({ force: true });
+        if (!(await link.isVisible().catch(() => false))) {
+            await this.page.locator('a.nav-link:has-text("Visits")').first().click({ force: true }).catch(() => undefined);
+            await this.page.waitForTimeout(500);
+        }
+        
+        try {
+            await link.click({ timeout: 5000 });
+        } catch {
+            await link.evaluate((el: HTMLElement) => (el as HTMLAnchorElement).click());
+        }
         await this.waitForPageLoad();
     }
 
+    // Click the Today's option in the calendar and wait for navigation
     async ClickTodayOptionInCalendar() {
         // Open the dropdown if it isn't already open
-        await this.page.locator('button.icon-calendar-days').click();
-
-        const todayOption = this.page.locator('li[data-range-key="Today"]');
-
+        await this.page.locator('.icon-calendar-days').click();
+        await this.page.waitForTimeout(1000); // Wait for the dropdown to open
+        const todayOption = this.page.locator('[data-range-key="Today"]');
         await todayOption.waitFor({ state: 'visible' });
         await todayOption.click();
-
         await this.waitForPageLoad();
     }
 
