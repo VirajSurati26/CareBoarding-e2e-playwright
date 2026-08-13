@@ -11,7 +11,7 @@ const loginAndSelectEntity = async (page: Page) => {
     const changeEntity = new ChangeEntity(page);
     await loginPage.goto(URLS.LOGIN);
     await loginPage.login(TEST_USERS.ADMIN_USER.username, TEST_USERS.ADMIN_USER.password);
-    await changeEntity.selectEntity('Smith HHE');
+    await changeEntity.selectEntity('Pennsylvania (PA)');
 };
 
 

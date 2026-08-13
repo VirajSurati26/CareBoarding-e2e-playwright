@@ -46,6 +46,7 @@ export const CHANGE_ENTITY_SELECTORS = {
   entityOptions: '.select2-results__option',
   confirmationButton: 'button:has-text("Yes, Change Entity")',
   searchField: 'input.select2-search__field',
+  entityOptionByName: (name: string): string => `.select2-results__option:has-text("${name}")`,
 } as const;
 
 /**

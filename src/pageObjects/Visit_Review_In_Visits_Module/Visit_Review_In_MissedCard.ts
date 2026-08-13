@@ -25,10 +25,11 @@ export class MissedCard extends BasePage {
         // Open the dropdown if it isn't already open
         await this.page.locator('.icon-calendar-days').click();
         await this.page.waitForTimeout(1000); // Wait for the dropdown to open
-        const todayOption = this.page.locator('li[data-range-key="Today"]');
+        const todayOption = this.page.locator('[data-range-key="Today"]');
         await todayOption.waitFor({ state: 'visible' });
         await todayOption.click();
         await this.waitForPageLoad();
+        
     }
 
     //------------------Missed visit" card-----------------------
