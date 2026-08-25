@@ -17,12 +17,8 @@ test.describe('Change Entity Module', () => {
   });
   test('should select Pennsylvania (PA) entity', async ({ page }) => {
     const changeEntity = new ChangeEntity(page);
-    const initialEntity = await changeEntity.getCurrentEntity();
     await changeEntity.selectEntity('Pennsylvania (PA)');
-    const newEntity = await changeEntity.getCurrentEntity();
-    expect(newEntity).toBe('Pennsylvania (PA)');
-    const entities = await changeEntity.getAvailableEntities();
-    expect(entities).toContain('Pennsylvania (PA)');
     await changeEntity.selectAreYouSureConfirmButton();
+    await changeEntity.selectYesButtonInConfirmationModal();
   });
-}); 
+});

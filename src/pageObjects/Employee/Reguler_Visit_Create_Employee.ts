@@ -7,6 +7,20 @@ export class Employee extends BasePage {
         super(page);
     }
 
+    async SearchEmployeePatientorPayer(searchText: string = 'TWI-000003') {
+        const searchInput = this.page.locator(ALL_LOCATORS.EMPLOYEE.searchEmployeePatientorPayer);
+        const suggestionBox = this.page.locator(ALL_LOCATORS.EMPLOYEE.suggestionBox);
+        await searchInput.click();
+        await this.page.keyboard.press('Space');
+        await this.page.waitForTimeout(3000);
+        await searchInput.fill(searchText);
+        await suggestionBox.waitFor({ state: 'visible', timeout: 15000 });
+        // Wait for AJAX results to load — find the first option that contains our search text
+        const matchingOption = suggestionBox.locator(`a:has-text("${searchText}")`).first();
+        await matchingOption.waitFor({ state: 'visible', timeout: 15000 });
+        await matchingOption.click();
+    }
+
     async clickEmployeeButtonsideMenu(): Promise<void> {
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.loadingOverlay).waitFor({ state: 'hidden', timeout: 15000 }).catch(() => { });
         const link = this.page.locator(ALL_LOCATORS.EMPLOYEE.navLinkEmployees).filter({ hasText: 'Employees' }).first();
@@ -17,25 +31,28 @@ export class Employee extends BasePage {
 
     async clickSearchEmployeeButton(): Promise<void> {
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.searchEmployeeBtn).click();
+
     }
 
     async selectAndOpenEmployee(index: number): Promise<string> {
         const row = this.page.locator(ALL_LOCATORS.EMPLOYEE.employeeTableRow).nth(index);
         const name = await row.locator('td').nth(1).textContent();
         await row.locator('td').nth(1).locator('a').click();
-        await this.page.waitForLoadState('networkidle', { timeout: 10000 });
-        return name?.trim() || '';
+        await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => { });
+        return name ?? '';
     }
 
     async clickCalendarButton(): Promise<void> {
+        await this.page.locator('.preloader').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => { });
         const btn = this.page.locator(ALL_LOCATORS.EMPLOYEE.calendarBtn).first();
         await btn.waitFor({ state: 'visible', timeout: 10000 });
-        await btn.click();
+        await btn.click({ force: true });
     }
 
     async selectCurrentDate(): Promise<void> {
         const day = new Date().getDate();
-        const dayLocator = this.page.locator(ALL_LOCATORS.EMPLOYEE.calendarDay(day)).filter({ hasNot: this.page.locator('.d-none') }).first();
+        // Create a locator for the specific day number (e.g., 21)
+        const dayLocator = this.page.getByText(String(day), { exact: true });
         await dayLocator.waitFor({ state: 'visible', timeout: 15000 });
         await dayLocator.click();
     }
@@ -43,19 +60,15 @@ export class Employee extends BasePage {
     private generateRandomVisitSlot(): { startTime: string; endTime: string } {
         // Random hour between 6 AM and 8 PM
         const hour = Math.floor(Math.random() * 15) + 6;
-
         // Random minutes: 00, 15, 30, 45
         const minuteOptions = [0, 15, 30, 45];
         const minute = minuteOptions[Math.floor(Math.random() * minuteOptions.length)];
-
         const start = new Date();
         start.setHours(hour, minute, 0, 0);
 
         // Random duration between 30 and 120 mins
         const duration = (Math.floor(Math.random() * 4) + 1) * 30;
-
         const end = new Date(start.getTime() + duration * 60 * 1000);
-
         const startTime = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`;
         const endTime = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
 
@@ -72,7 +85,6 @@ export class Employee extends BasePage {
         } catch (error) {
             console.log('Failed to get non‑overlapping slot, using random slot fallback.', error);
         }
-
         const { startTime, endTime } = this.generateRandomVisitSlot();
         await this.fillVisitTime(startTime, endTime);
         return { startTime, endTime };
@@ -81,27 +93,19 @@ export class Employee extends BasePage {
     async generateNonOverlappingVisitTime(): Promise<{ startTime: string; endTime: string }> {
         const start = new Date();
         start.setMinutes(start.getMinutes() + Math.floor(Math.random() * 16));
-
         const end = new Date(start.getTime() + 60 * 60 * 1000);
-
-        const format = (d: Date) =>
-            `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-
+        const format = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
         const startTime = format(start);
         const endTime = format(end);
-
         await this.fillVisitTime(startTime, endTime);
-
         return { startTime, endTime };
     }
 
     async fillVisitTime(startTime: string, endTime: string): Promise<void> {
         const inTimeInput = this.page.locator(ALL_LOCATORS.EMPLOYEE.inTimeInput);
         const outTimeInput = this.page.locator(ALL_LOCATORS.EMPLOYEE.outTimeInput);
-
         await inTimeInput.waitFor({ state: 'visible', timeout: 5000 });
         await outTimeInput.waitFor({ state: 'visible', timeout: 5000 });
-
         await inTimeInput.fill(startTime);
         await outTimeInput.fill(endTime);
     }
@@ -131,15 +135,12 @@ export class Employee extends BasePage {
     private async selectDropdownOption(dropdownLocator: any, textToSearch: string): Promise<string> {
         await dropdownLocator.waitFor({ state: 'visible', timeout: 10000 });
         await dropdownLocator.click();
-
         const searchField = this.page.locator('input.select2-search__field');
         await searchField.waitFor({ state: 'visible', timeout: 5000 });
         await searchField.focus();
         await searchField.pressSequentially(textToSearch, { delay: 50 });
-
         await this.page.waitForTimeout(1000);
         await this.page.locator('.select2-results__option:has-text("Searching")').waitFor({ state: 'hidden', timeout: 8000 }).catch(() => { });
-
         const firstWord = textToSearch.split(' ')[0];
         const option = this.page.locator(ALL_LOCATORS.EMPLOYEE.select2ResultsOption).filter({ hasText: firstWord }).first();
         await option.waitFor({ state: 'visible', timeout: 10000 });

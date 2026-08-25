@@ -81,7 +81,6 @@ test.describe('Web to Mobile Visit Test', () => {
     await employee.clickCalendarButton();
     await employee.selectCurrentDate();
     const { startTime } = await employee.generatePastVisitTime();
-
     const rawPatientName = await employee.selectPatientByIndex(0);
     await employee.selectPayRateByIndex(1);
     await employee.selectPOC('TESTING');

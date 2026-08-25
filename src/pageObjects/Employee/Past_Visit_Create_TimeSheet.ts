@@ -6,6 +6,19 @@ export class Employee extends BasePage {
     constructor(page: Page) {
         super(page);
     }
+    async SearchEmployeePatientorPayer(searchText: string = 'TWI-000003') {
+        const searchInput = this.page.locator(ALL_LOCATORS.EMPLOYEE.searchEmployeePatientorPayer);
+        const suggestionBox = this.page.locator(ALL_LOCATORS.EMPLOYEE.suggestionBox);
+        await searchInput.click();
+        await this.page.keyboard.press('Space');
+        await this.page.waitForTimeout(3000);
+        await searchInput.fill(searchText);
+        await suggestionBox.waitFor({ state: 'visible', timeout: 15000 });
+        // Wait for AJAX results to load — find the first option that contains our search text
+        const matchingOption = suggestionBox.locator(`a:has-text("${searchText}")`).first();
+        await matchingOption.waitFor({ state: 'visible', timeout: 15000 });
+        await matchingOption.click();
+    }
 
     async clickEmployeeButtonsideMenu(): Promise<void> {
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.loadingOverlay).waitFor({ state: 'hidden', timeout: 15000 }).catch(() => { });
@@ -131,26 +144,30 @@ export class Employee extends BasePage {
     }
 
     async getRandomPastSlot(): Promise<{ start: string; end: string }> {
-
         const now = Date.now();
 
-        const visitLengthMins = 60 + Math.floor(Math.random() * 60); // 60–120 mins
-
+        // Visit duration: 30–60 mins
+        const visitLengthMins = 30 + Math.floor(Math.random() * 31);
         const durationMs = visitLengthMins * 60 * 1000;
 
-        const safeMaxEnd = now - 1 * 60 * 1000;
-        const safeMinEnd = now - 5 * 60 * 1000;
+        // End time: between 5 min and 60 min ago
+        const safeMaxEnd = now - 5 * 60 * 1000;
+        const safeMinEnd = now - 60 * 60 * 1000;
 
         const endDate = new Date(
             safeMinEnd + Math.random() * (safeMaxEnd - safeMinEnd)
         );
         const startDate = new Date(endDate.getTime() - durationMs);
+
         const fmt = (d: Date) =>
             `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
-        return {
-            start: fmt(startDate),
-            end: fmt(endDate),
-        };
+        const start = fmt(startDate);
+        const end = fmt(endDate);
+
+        // Actually fill the time inputs on the page
+        await this.fillVisitTime(start, end);
+
+        return { start, end };
     }
 }

@@ -46,4 +46,10 @@ export class ChangeEntity {
         await confirmButton.click();
     }
 
+    async selectYesButtonInConfirmationModal(): Promise<void> {
+        const yesButton = this.page.locator('button.swal2-confirm.btn.btn-orange').first();
+        await yesButton.waitFor({ state: 'visible', timeout: 15000 }).catch(() => { });
+        await yesButton.click();
+    }
+
 }   

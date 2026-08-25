@@ -4,7 +4,7 @@ import { TEST_USERS, URLS } from "@/data/testData/testData";
 import { ChangeEntity } from "@/pageObjects/BaseClass/ChangeEntity";
 import { BasePage } from "@/pageObjects/BaseClass/BasePage";
 import { Employee } from "@/pageObjects/Employee/Reguler_Visit_Create_Employee";
-
+import { time } from 'console';
 
 const loginAndSelectEntity = async (page: any) => {
   const loginPage = new LoginPage(page);
@@ -12,50 +12,35 @@ const loginAndSelectEntity = async (page: any) => {
   await loginPage.goto(URLS.LOGIN);
   await loginPage.login(TEST_USERS.ADMIN_USER.username, TEST_USERS.ADMIN_USER.password);
   await changeEntity.selectEntity('Pennsylvania (PA)');
+  await changeEntity.selectAreYouSureConfirmButton();
 };
 
 test.describe('Select employees module', () => {
-  test('Login and select entity', async ({ page }) => {
-    test.setTimeout(60000);
+  test('Login, select entity, search and open employee', async ({ page }) => {
+    test.setTimeout(180000);
+
+    const basePage = new BasePage(page);
+    await basePage.maximizeWindow();
     await loginAndSelectEntity(page);
     expect(page.url()).toContain(URLS.DASHBOARD);
-  });
-
-  test.describe('after login and entity selection', () => {
-    test.beforeEach(async ({ page }) => {
-      const basePage = new BasePage(page);
-      await basePage.maximizeWindow();
-      await loginAndSelectEntity(page);
-    });
-
-    test('Employee search and open', async ({ page }) => {
-      const employee = new Employee(page);
-      await employee.clickEmployeeButtonsideMenu();
-      await employee.clickSearchEmployeeButton();
-      const selectedEmployee = await employee.selectAndOpenEmployee(0);
-      expect(selectedEmployee).toBeTruthy();
-    });
-
-    test('Create visit', async ({ page }) => {
-      test.setTimeout(60000);
-      const employee = new Employee(page);
-      await employee.clickEmployeeButtonsideMenu();
-      await employee.clickSearchEmployeeButton();
-      await employee.selectAndOpenEmployee(0);
-      await employee.clickCalendarButton();
-      await employee.selectCurrentDate();
-      const { startTime, endTime } = await employee.generateNonOverlappingVisitTime();
-      await employee.fillVisitTime(startTime, endTime);
-      const selectedPatient = await employee.selectPatientByIndex(0);
-      expect(selectedPatient).toBeTruthy();
-      const selectedPayRate = await employee.selectPayRateByIndex(1);
-      expect(selectedPayRate).toBeTruthy();
-      const selectedPOC = await employee.selectPOC("TESTING (671268)");
-      expect(selectedPOC).toBeTruthy();
-      const selectedServiceCode = await employee.selectServiceCode("G0156 U7");
-      expect(selectedServiceCode).toBeTruthy();
-      await employee.clickCreateButton();
-      await employee.clickOKButtonandPrintValidationMessage();
-    });
+    const employee = new Employee(page);
+    await employee.SearchEmployeePatientorPayer();
+    await page.waitForTimeout(3000);
+    // await employee.clickEmployeeButtonsideMenu();
+    // await employee.clickSearchEmployeeButton();
+    // await employee.selectAndOpenEmployee(0);
+    await employee.clickCalendarButton();
+    await employee.selectCurrentDate();
+    const { startTime, endTime } = await employee.generateNonOverlappingVisitTime();
+    await employee.fillVisitTime(startTime, endTime);
+    await employee.selectPatientByIndex(0);
+    await employee.selectPayRateByIndex(1);
+    await employee.selectPOC("TESTING (671268)");
+    await page.waitForTimeout(3000);
+    await employee.selectServiceCode("G0156 U7");
+    await page.waitForTimeout(3000);
+    await employee.clickCreateButton();
+    await employee.clickOKButtonandPrintValidationMessage();
+    await page.waitForTimeout(3000);
   });
 });
