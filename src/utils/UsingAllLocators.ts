@@ -21,7 +21,11 @@ export const LOGIN_SELECTORS = {
 export const EMPLOYEE_SELECTORS = {
   loadingOverlay: '.loading-overlay.is-active',
   navLinkEmployees: 'a.nav-link',
-  searchEmployeeBtn: 'text=Search Employee',
+  searchEmployeeBtn: 'text="Search Employee"',
+  searchEmployeePatientorPayer: 'input[name="searchData"]',
+  inputGroupCustom: '.input-group-custom',
+  suggestionBox: '#suggestionBox',
+  suggestionBoxFirstOption: 'div.d-flex',
   employeeTableRow: 'table tbody tr',
   calendarBtn: 'text=Calendar',
   inTimeInput: 'input[name="in_time"]',

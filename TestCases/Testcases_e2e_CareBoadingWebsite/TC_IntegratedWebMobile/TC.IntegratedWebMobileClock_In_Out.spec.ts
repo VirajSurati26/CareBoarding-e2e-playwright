@@ -6,56 +6,43 @@ import { Employee } from "@/pageObjects/Employee/Reguler_Visit_Create_Employee";
 import { LoginPage } from "@/pageObjects/BaseClass/LoginPage";
 import { MobileApp } from "@/pageObjects/IntegratedWebMobileApp/IntegratedWebMobileClock_In_Out";
 
-test.describe('Web to Mobile Visit Test', () => {
-  let mobileApp: MobileApp;
+const loginAndSelectEntity = async (page: any) => {
+    const loginPage = new LoginPage(page);
+    const changeEntity = new ChangeEntity(page);
+    await loginPage.goto(URLS.LOGIN);
+    await loginPage.login(TEST_USERS.ADMIN_USER.username, TEST_USERS.ADMIN_USER.password);
+    await changeEntity.selectEntity('Pennsylvania (PA)');
+    await changeEntity.selectAreYouSureConfirmButton();
+};
 
-  //--------- Test Setup ---------//
-  test.beforeEach(async ({ page }) => {
-    const basePage = new BasePage(page);
-    await basePage.maximizeWindow();
-    mobileApp = new MobileApp();
-  });
-
-  test.afterEach(async () => {
-    try {
-      await mobileApp.closeDevice();
-    } catch (error) {
-      console.warn('Mobile teardown failed but test will continue:', error);
-    }
-  });
-
-  test(
-    'Create visit on web and check on mobile', async ({ page }) => {
-      test.setTimeout(240000); // 4 minutes
-
+test.describe('Select employees module', () => {
+    test('Login, select entity, search and open employee', async ({ page }) => {
+        test.setTimeout(180000);
       // ---------------STEP 1: Create visit on web---------------------
 
-      const loginPage = new LoginPage(page);
-      const changeEntity = new ChangeEntity(page);
-      const employee = new Employee(page);
-
-      await loginPage.goto(URLS.LOGIN);
-      await loginPage.login(TEST_USERS.ADMIN_USER.username, TEST_USERS.ADMIN_USER.password);
-      await changeEntity.selectEntity('Pennsylvania (PA)');
-      await changeEntity.selectAreYouSureConfirmButton();
-
-      await employee.clickEmployeeButtonsideMenu();
-      await employee.clickSearchEmployeeButton();
-      const empName = await employee.selectAndOpenEmployee(0);
-
-      await employee.clickCalendarButton();
-      await employee.selectCurrentDate();
-      const { startTime, endTime } = await employee.generateVisitAtRandomTime();
-
-      const rawPatientName = await employee.selectPatientByIndex(0);
-      await employee.selectPayRateByIndex(1);
-      await employee.selectPOC("TESTING");
-      await employee.selectServiceCode("G0156");
-      await employee.clickCreateButton();
-      await employee.clickOKButtonandPrintValidationMessage();
+      
+              const basePage = new BasePage(page);
+              await basePage.maximizeWindow();
+              await loginAndSelectEntity(page);
+              expect(page.url()).toContain(URLS.DASHBOARD);
+              const employee = new Employee(page);
+              await employee.SearchEmployeePatientorPayer();
+              await page.waitForTimeout(3000);
+              // await employee.clickEmployeeButtonsideMenu();
+              // await employee.clickSearchEmployeeButton();
+              // await employee.selectAndOpenEmployee(0);
+              await employee.clickCalendarButton();
+              await employee.selectCurrentDate();
+              const { startTime, endTime } = await employee.generateVisitAtRandomTime();
+              const selectedPatient = await employee.selectPatientByIndex(0);
+              const selectedPayRate = await employee.selectPayRateByIndex(1);
+              const selectedPOC = await employee.selectPOC("TESTING (671268)");
+              const selectedServiceCode = await employee.selectServiceCode("G0156 U7");
+              await employee.clickCreateButton();
+              await employee.clickOKButtonandPrintValidationMessage();
 
       //------------------Clean patient name (e.g., "Smith, John (P123)" or "John Smith (P123)" -> "John Smith")----------------
-      let patientName = rawPatientName.split('(')[0].trim();
+      let patientName = selectedPatient.split('(')[0].trim();
       if (patientName.includes(',')) {
         const parts = patientName.split(',').map(p => p.trim());
         // Handle edge case: if more than 2 parts, join all but first as first name
@@ -94,7 +81,7 @@ test.describe('Web to Mobile Visit Test', () => {
         await mobileApp.startEmulator();
 
         console.log('Starting Appium server...');
-        await mobileApp.startAppium();
+        await MobileApp.startAppium();
 
         const appPath = process.env.ANDROID_APK_PATH;
         const deviceId = process.env.ANDROID_DEVICE_ID || 'emulator-5554';
