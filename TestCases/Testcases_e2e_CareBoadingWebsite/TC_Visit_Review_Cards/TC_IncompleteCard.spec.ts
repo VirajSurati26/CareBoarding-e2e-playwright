@@ -8,26 +8,26 @@ const loginAndSelectEntity = async (page: any) => {
     const loginPage = new LoginPage(page);
     const changeEntity = new ChangeEntity(page);
     await loginPage.goto(URLS.LOGIN);
+    await loginPage.maximizeWindow();
     await loginPage.login(TEST_USERS.ADMIN_USER.username, TEST_USERS.ADMIN_USER.password);
     await changeEntity.selectEntity('Pennsylvania (PA)');
+    await changeEntity.selectAreYouSureConfirmButton();
 };
 
 test('Visit Review appears in Visits module', async ({ page }) => {
-    await loginAndSelectEntity(page);
+  await loginAndSelectEntity(page);
     const visitReviewPage = new Visit_Review_IN_Visits_Field(page);
-    await visitReviewPage.maximizeWindow();
     await visitReviewPage.ClickINVisitInSideMenu();
-    await visitReviewPage.ClickVisitReviewOption();
     await page.waitForTimeout(5000);
+    await visitReviewPage.ClickVisitReviewOption();
 
-    //Verify the select the "Scheduled visit" card in Visit review page
-    await visitReviewPage.ClickScheduledVisitcard();
-    await page.waitForTimeout(5000)
+    //Verify the select the "InCompleted visit" card in Visit review page
+    await visitReviewPage.ClickInCompletedStatusDropdown();
+    await page.waitForTimeout(5000);
 
     //-------------------------------------------------------------------------------------
     //--------------------Verification of "Scheduled" card Data----------------------------------
     //-------------------------------------------------------------------------------------
-
 
     // //Select the column for export file
     // await visitReviewPage.ClickSelectColumnToExport();
@@ -44,10 +44,4 @@ test('Visit Review appears in Visits module', async ({ page }) => {
     // //Verify the export file is downloaded
     // await visitReviewPage.VerifyExportFile();
     // await page.waitForTimeout(5000);
-
-
-
-
-
-
 });

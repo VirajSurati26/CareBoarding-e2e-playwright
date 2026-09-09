@@ -15,9 +15,9 @@ const loginAndSelectEntity = async (page: any) => {
     await changeEntity.selectAreYouSureConfirmButton();
 };
 
-test.describe('Select employees module', () => {
     test('Login, select entity, search and open employee', async ({ page }) => {
         test.setTimeout(180000);
+        
       // ---------------STEP 1: Create visit on web---------------------
 
       
@@ -42,6 +42,7 @@ test.describe('Select employees module', () => {
               await employee.clickOKButtonandPrintValidationMessage();
 
       //------------------Clean patient name (e.g., "Smith, John (P123)" or "John Smith (P123)" -> "John Smith")----------------
+      
       let patientName = selectedPatient.split('(')[0].trim();
       if (patientName.includes(',')) {
         const parts = patientName.split(',').map(p => p.trim());
@@ -57,6 +58,7 @@ test.describe('Select employees module', () => {
       }
 
       //--------------------Convert 24-hour time (e.g. "04:41") to 12-hour format (e.g. "4:41 AM")----------------------------
+
       const formatTo12Hour = (time24: string): string => {
         const match = time24.match(/^(\d{1,2}):(\d{2})$/);
         if (!match) {
@@ -75,16 +77,18 @@ test.describe('Select employees module', () => {
       };
 
       const visitStartTime12H = formatTo12Hour(startTime);
+      const empName = process.env.EMPLOYEE_NAME || '';
+      const mobileApp = new MobileApp();
 
       try {
         console.log('Starting Android emulator...');
-        await mobileApp.startEmulator();
+        const connectedDeviceId = await mobileApp.startEmulator();
 
         console.log('Starting Appium server...');
-        await MobileApp.startAppium();
+        await mobileApp.startAppium();
 
         const appPath = process.env.ANDROID_APK_PATH;
-        const deviceId = process.env.ANDROID_DEVICE_ID || 'emulator-5554';
+        const deviceId = connectedDeviceId;
         if (!appPath) {
           throw new Error('ANDROID_APK_PATH is not set. Add ANDROID_APK_PATH to your .env file pointing to the APK file.');
         }
@@ -121,6 +125,8 @@ test.describe('Select employees module', () => {
         await mobileApp.okButton();
       } catch (error) {
         console.error('Mobile verification failed but web assertions will continue:', error);
+      } finally {
+        await mobileApp.closeDevice();
       }
 
       // Just log the issue but don't fail or skip the test
@@ -133,4 +139,4 @@ test.describe('Select employees module', () => {
       console.log('   5. Run: adb devices to verify connection');
       console.log('   6. Start Appium: npx appium --port 4724');
     });
-});
+

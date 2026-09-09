@@ -3,7 +3,7 @@ import { TEST_USERS, URLS } from '@/data/testData/testData';
 import { ChangeEntity } from '@/pageObjects/BaseClass/ChangeEntity';
 import { LoginPage } from '@/pageObjects/BaseClass/LoginPage';
 import { Visit_Review_IN_Visits_Field } from '@/pageObjects/Visits_Module/Visit_Review_In_Visits_Field';
-import { MissedCard } from '@/pageObjects/Visit_Review_In_Visits_Module/Visit_Review_In_MissedCard';
+import { MissedCard } from '@/pageObjects/Visit_Review_In_Visits_Module/Visit_Review_MissedCard';
 import { Employee } from '@/pageObjects/Employee/Past_Visit_Create_TimeSheet';
 
 const VisitReviewPage = async (page: any) => {

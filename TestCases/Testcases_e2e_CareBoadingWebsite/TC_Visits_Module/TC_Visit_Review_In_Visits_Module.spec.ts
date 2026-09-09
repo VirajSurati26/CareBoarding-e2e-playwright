@@ -7,18 +7,18 @@ import { Visit_Review_IN_Visits_Field } from "@/pageObjects/Visits_Module/Visit_
 const loginAndSelectEntity = async (page: any) => {
   const loginPage = new LoginPage(page);
   const changeEntity = new ChangeEntity(page);
+    await loginPage.maximizeWindow();
   await loginPage.goto(URLS.LOGIN);
   await loginPage.login(TEST_USERS.ADMIN_USER.username, TEST_USERS.ADMIN_USER.password);
-
   await changeEntity.selectEntity('Pennsylvania (PA)');
-};
-
-test.setTimeout(120000); // increase test timeout to 2 minutes
+     await page.waitForTimeout(5000); 
+    await changeEntity.selectAreYouSureConfirmButton();
+    await page.selectYesButtonInConfirmationModal();
 
 test('Visit Review appears in Visits module', async ({ page }) => {
   await loginAndSelectEntity(page);
   const visitReviewPage = new Visit_Review_IN_Visits_Field(page);
-  await visitReviewPage.maximizeWindow();
+
   await visitReviewPage.ClickINVisitInSideMenu();
   await visitReviewPage.ClickVisitReviewOption();
   await page.waitForTimeout(5000);
@@ -43,5 +43,4 @@ test('Visit Review appears in Visits module', async ({ page }) => {
 
 });
 
-
-
+};

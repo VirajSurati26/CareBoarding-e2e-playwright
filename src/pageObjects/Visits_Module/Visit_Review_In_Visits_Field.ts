@@ -4,6 +4,10 @@ import { Page } from "@playwright/test";
 
 
 export class Visit_Review_IN_Visits_Field extends BasePage {
+    Click_InCompletedcard() {
+        throw new Error('Method not implemented.');
+    }
+    Click_Completedcard: any;
     constructor(page: Page) {
         super(page)
     }
@@ -73,6 +77,8 @@ export class Visit_Review_IN_Visits_Field extends BasePage {
 
     }
 
+   
+
     //------------------Missed visit" card-----------------------
 
     //Click on the "Missed visit" card Visit review page
@@ -108,5 +114,24 @@ export class Visit_Review_IN_Visits_Field extends BasePage {
 
     }
 
+     //------------------Aggregator Error card-----------------------
+
+     async Click_Aggregatorcard() {
+        const aggregatorCard = this.page.locator('.card-item:has(.small-box.aggregator-error)');
+        await aggregatorCard.waitFor({ state: 'visible', timeout: 20000 });
+        await aggregatorCard.click();
+
+        await this.page.evaluate(() => { window.scrollTo(0, document.body.scrollHeight); });
+        await this.scrollUp(500);
+    }
+
+     //------------------In Completed visit" card-----------------------
+
+     //Click on the "In Completed" status dropdown in Visit review page
+     async ClickInCompletedStatusDropdown() {
+          const inCompletedTab = this.page.locator('.small-box.incomplete');
+          await inCompletedTab.waitFor({ state: 'visible', timeout: 20000 });
+          await inCompletedTab.click();
+}
 
 }

@@ -43,10 +43,13 @@ export class Employee extends BasePage {
     }
 
     async clickCalendarButton(): Promise<void> {
-        await this.page.locator('.preloader').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => { });
-        const btn = this.page.locator(ALL_LOCATORS.EMPLOYEE.calendarBtn).first();
+        await this.page.locator('.preloader:visible').waitFor({ state: 'hidden', timeout: 30000 }).catch(() => { });
+        const btn = this.page.locator('a[href*="/admin/employee-schedule/"]').filter({ hasText: 'View Calendar' }).first();
         await btn.waitFor({ state: 'visible', timeout: 10000 });
-        await btn.click({ force: true });
+        await Promise.all([
+            this.page.waitForURL('**/admin/employee-schedule/**', { waitUntil: 'commit', timeout: 30000 }),
+            btn.click(),
+        ]);
     }
 
     async selectCurrentDate(): Promise<void> {

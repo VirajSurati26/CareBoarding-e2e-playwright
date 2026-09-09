@@ -44,6 +44,9 @@ export class ChangeEntity {
             .first();
         await confirmButton.waitFor({ state: 'visible' });
         await confirmButton.click();
+        await this.page.waitForLoadState('domcontentloaded');
+        await this.page.locator('.loading-overlay.is-active, .preloader').first()
+          
     }
 
     async selectYesButtonInConfirmationModal(): Promise<void> {

@@ -6,6 +6,7 @@ export class Employee extends BasePage {
     constructor(page: Page) {
         super(page);
     }
+
     async SearchEmployeePatientorPayer(searchText: string = 'TWI-000003') {
         const searchInput = this.page.locator(ALL_LOCATORS.EMPLOYEE.searchEmployeePatientorPayer);
         const suggestionBox = this.page.locator(ALL_LOCATORS.EMPLOYEE.suggestionBox);
@@ -30,26 +31,30 @@ export class Employee extends BasePage {
 
     async clickSearchEmployeeButton(): Promise<void> {
         await this.page.locator(ALL_LOCATORS.EMPLOYEE.searchEmployeeBtn).click();
+
     }
 
     async selectAndOpenEmployee(index: number): Promise<string> {
         const row = this.page.locator(ALL_LOCATORS.EMPLOYEE.employeeTableRow).nth(index);
         const name = await row.locator('td').nth(1).textContent();
         await row.locator('td').nth(1).locator('a').click();
-        await this.page.waitForLoadState('networkidle', { timeout: 10000 });
-        return name?.trim() || '';
+        await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => { });
+        return name ?? '';
     }
 
     async clickCalendarButton(): Promise<void> {
-        const btn = this.page.locator(ALL_LOCATORS.EMPLOYEE.calendarBtn).first();
+        await this.page.locator('.preloader').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => { });
+        const btn = this.page.locator('a[href*="/admin/employee-schedule/"]').filter({ hasText: 'View Calendar' }).first();
         await btn.waitFor({ state: 'visible', timeout: 10000 });
-        await btn.click();
+        await Promise.all([ this.page.waitForURL('**/admin/employee-schedule/**', { waitUntil: 'commit', timeout: 30000 }), btn.click()]);
     }
 
     async selectCurrentDate(): Promise<void> {
-        const day = new Date().getDate();
-        const dayLocator = this.page.locator(ALL_LOCATORS.EMPLOYEE.calendarDay(day)).filter({ hasNot: this.page.locator('.d-none') }).first();
-        await dayLocator.waitFor({ state: 'visible', timeout: 15000 });
+        const today = new Date();
+        const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        await this.page.locator('.preloader').waitFor({ state: 'hidden', timeout: 30000 }).catch(() => { });
+        const dayLocator = this.page.locator(`.fc-daygrid-day[data-date="${date}"], .fc-day[data-date="${date}"]`).first();
+        await dayLocator.waitFor({ state: 'visible', timeout: 30000 });
         await dayLocator.click();
     }
 
