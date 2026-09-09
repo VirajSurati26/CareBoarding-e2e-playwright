@@ -4,9 +4,7 @@ import { ChangeEntity } from '@/pageObjects/BaseClass/ChangeEntity';
 import { TEST_USERS, URLS } from '@/data/testData/testData';
 import { BaseTest } from '@/base/BaseTest';
 
-
-test.describe('Change Entity Module', () => {
-  test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page }) => {
     const baseTest = new BaseTest(page);
     await baseTest.maximizeWindow();
     const login = new LoginPage(page);
@@ -14,11 +12,15 @@ test.describe('Change Entity Module', () => {
     await login.login(TEST_USERS.VALID_USER.username, TEST_USERS.VALID_USER.password);
     await baseTest.waitForNetworkIdle();
     expect(page.url()).toContain(URLS.DASHBOARD);
-  });
-  test('should select Pennsylvania (PA) entity', async ({ page }) => {
     const changeEntity = new ChangeEntity(page);
     await changeEntity.selectEntity('Pennsylvania (PA)');
+    await page.waitForTimeout(5000);
     await changeEntity.selectAreYouSureConfirmButton();
-    await changeEntity.selectYesButtonInConfirmationModal();
-  });
+    await page.waitForTimeout(5000);
+    //await changeEntity.selectYesButtonInConfirmationModal();
+});
+
+test('should select Pennsylvania (PA) entity', async ({ page }) => {
+    const changeEntity = new ChangeEntity(page);
+    await expect.poll(() => changeEntity.getCurrentEntity()).toContain('Pennsylvania (PA)');
 });

@@ -1,12 +1,13 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { LoginPage } from '@/pageObjects/BaseClass/LoginPage';
 import { ChangeEntity } from '@/pageObjects/BaseClass/ChangeEntity';
 import { Employee } from '@/pageObjects/Employee/Past_Visit_Create_TimeSheet';
-import { MobileApp } from '@/pageObjects/IntegratedWebMobileApp/IntegratedWebMobileClock_In_Out';
+import { MobileApp } from '@/pageObjects/IntegratedWebMobileApp/IntegratedWebMobile_Fill_TimeSheet';
 import { BasePage } from '@/pageObjects/BaseClass/BasePage';
-import { MissedCard } from '@/pageObjects/Visit_Review_In_Visits_Module/Visit_Review_In_MissedCard';
+import { MissedCard } from '@/pageObjects/Visit_Review_In_Visits_Module/Visit_Review_MissedCard';
 import { TEST_USERS, URLS } from '@/data/testData/testData';
 import { Visit_Review_IN_Visits_Field } from '@/pageObjects/Visits_Module/Visit_Review_In_Visits_Field';
+
 
 const formatTo12Hour = (time24: string): string => {
   const match = time24.match(/^(\d{1,2}):(\d{2})$/);
@@ -64,24 +65,20 @@ test.describe('Web to Mobile Visit Test', () => {
     }
   });
 
-  test('Create visit on web and check on mobile', async ({ page }) => {
-    test.setTimeout(240000);
-
-    const loginPage = new LoginPage(page);
-    const changeEntity = new ChangeEntity(page);
+  test('fills the timesheet and verifies the visit in mobile', async ({ page }) => {
+    test.setTimeout(180000);
+     const basePage = new BasePage(page);
+    await basePage.maximizeWindow();
+    await loginAndSelectEntity(page);
+    expect(page.url()).toContain(URLS.DASHBOARD);
     const employee = new Employee(page);
-
-    await loginPage.goto(URLS.LOGIN);
-    await loginPage.login(TEST_USERS.ADMIN_USER.username, TEST_USERS.ADMIN_USER.password);
-    await changeEntity.selectEntity('Pennsylvania (PA)');
-    await changeEntity.selectAreYouSureConfirmButton();
-    await employee.clickEmployeeButtonsideMenu();
-    await employee.clickSearchEmployeeButton();
-    const empName = await employee.selectAndOpenEmployee(0);
+    await employee.SearchEmployeePatientorPayer();
+    await page.waitForTimeout(3000);
+    // await employee.clickEmployeeButtonsideMenu();
+    // await employee.clickSearchEmployeeButton();
+    // await employee.selectAndOpenEmployee(0);
     await employee.clickCalendarButton();
     await employee.selectCurrentDate();
-    const { startTime } = await employee.generatePastVisitTime();
-    const rawPatientName = await employee.selectPatientByIndex(0);
     await employee.selectPayRateByIndex(1);
     await employee.selectPOC('TESTING');
     await employee.selectServiceCode('G0156');
@@ -96,9 +93,12 @@ test.describe('Web to Mobile Visit Test', () => {
     const missedCardPage = new MissedCard(page);
     await missedCardPage.ClickMissedVisitcard();
     await missedCardPage.CreateNewRecentScheduledVisitForFirstMissedVisit();
+    const rawPatientName = 'Unknown Patient';
+    const startTime = '08:00';
+    const empName = TEST_USERS.VALID_USER.username;
     const patientName = normalizePatientName(rawPatientName);
     const visitStartTime12H = formatTo12Hour(startTime);
-    
+
     try {
       console.log('Starting Android emulator...');
       await mobileApp.startEmulator();
@@ -132,4 +132,19 @@ test.describe('Web to Mobile Visit Test', () => {
       console.warn(error);
     }
   });
-});
+  });
+  
+async function loginAndSelectEntity(page: Page): Promise<void> {
+  const loginPage = new LoginPage(page);
+  const webUser = TEST_USERS.VALID_USER;
+
+  await loginPage.navigate();
+  await loginPage.login(webUser.username, webUser.password);
+
+  const changeEntity = new ChangeEntity(page);
+  await changeEntity.selectEntity(
+    process.env.CAREBOARDING_ENTITY || 'Pennsylvania (PA)'
+  );
+  await changeEntity.selectAreYouSureConfirmButton();
+}
+

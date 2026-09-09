@@ -15,7 +15,6 @@ const loginAndSelectEntity = async (page: any) => {
   await changeEntity.selectAreYouSureConfirmButton();
 };
 
-test.describe('Select employees module', () => {
   test('Login, select entity, search and open employee', async ({ page }) => {
     test.setTimeout(180000);
 
@@ -43,4 +42,3 @@ test.describe('Select employees module', () => {
     await employee.clickOKButtonandPrintValidationMessage();
     await page.waitForTimeout(3000);
   });
-});
