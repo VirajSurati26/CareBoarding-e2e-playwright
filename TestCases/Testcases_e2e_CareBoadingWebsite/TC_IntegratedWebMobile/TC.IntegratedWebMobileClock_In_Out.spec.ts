@@ -33,7 +33,7 @@ const loginAndSelectEntity = async (page: any) => {
               // await employee.selectAndOpenEmployee(0);
               await employee.clickCalendarButton();
               await employee.selectCurrentDate();
-              const { startTime, endTime } = await employee.generateVisitAtRandomTime();
+              const { startTime } = await employee.generateVisitAtRandomTime();
               const selectedPatient = await employee.selectPatientByIndex(0);
               const selectedPayRate = await employee.selectPayRateByIndex(1);
               const selectedPOC = await employee.selectPOC("TESTING (671268)");
@@ -57,27 +57,12 @@ const loginAndSelectEntity = async (page: any) => {
         }
       }
 
-      //--------------------Convert 24-hour time (e.g. "04:41") to 12-hour format (e.g. "4:41 AM")----------------------------
-
-      const formatTo12Hour = (time24: string): string => {
-        const match = time24.match(/^(\d{1,2}):(\d{2})$/);
-        if (!match) {
-          throw new Error(`Invalid 24-hour time format: ${time24}. Expected H:MM or HH:MM`);
-        }
-
-        const [, hoursStr, minutes] = match;
-        const hours = Number(hoursStr);
-        if (Number.isNaN(hours) || hours < 0 || hours > 23) {
-          throw new Error(`Invalid hour value in time: ${time24}`);
-        }
-
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        const hour12 = hours % 12 === 0 ? 12 : hours % 12;
-        return `${hour12}:${minutes} ${ampm}`;
+      const formatTo12Hour = (time: string): string => {
+        const [hoursText, minutes] = time.split(':');
+        const hours = Number(hoursText);
+        return `${hours % 12 || 12}:${minutes} ${hours >= 12 ? 'PM' : 'AM'}`;
       };
-
-      const visitStartTime12H = formatTo12Hour(startTime);
-      const empName = process.env.EMPLOYEE_NAME || '';
+      const visitStartTime = formatTo12Hour(startTime);
       const mobileApp = new MobileApp();
 
       try {
@@ -105,15 +90,8 @@ const loginAndSelectEntity = async (page: any) => {
         await new Promise(r => setTimeout(r, 5000));
         console.log('Patient Found : ', patientName);
 
-        //----------Perform the recent visit select----------------
-        const visitExists = await mobileApp.findRecentVisit(empName, patientName, visitStartTime12H);
-        expect(visitExists).toBe(true);
-
-        console.log('👆 Clicking on the visit card...');
-        await mobileApp.clickVisit(patientName, visitStartTime12H);
-
-        //----------Perform the successfully clock-in------------
-        await mobileApp.clickClockIn();
+        //----------Select today's visit and clock in----------------
+        await mobileApp.selectTodayVisitAndClockIn(patientName, visitStartTime);
         await new Promise(r => setTimeout(r, 5000));
 
         //-----------Click the out and Fill-up all details--------
