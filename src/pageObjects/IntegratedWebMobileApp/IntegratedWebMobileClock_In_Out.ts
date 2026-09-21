@@ -26,19 +26,22 @@ class MobileAppLogger {
 const MOBILE_SELECTORS = {
     LANGUAGE_OR_CONTINUE: '//*[@text="Continue" or @text="English" or @content-desc="Continue" or @content-desc="English"]',
     ALLOW_PERMISSION: '//*[@text="Allow" or @text="While using the app" or @content-desc="Allow"]',
-    USERNAME_INPUT: '//*[@resource-id="username" or contains(@resource-id, ":id/username")] | (//android.widget.EditText)[1]',
-    PASSWORD_INPUT: '//*[@resource-id="password" or contains(@resource-id, ":id/password")] | (//android.widget.EditText)[2]',
+    USERNAME_INPUT: '//android.widget.EditText[@hint="Enter your email"] | //*[@resource-id="username" or contains(@resource-id, ":id/username")] | (//android.widget.EditText)[1]',
+    PASSWORD_INPUT: '//android.widget.EditText[@hint="Enter your password"] | //*[@resource-id="password" or contains(@resource-id, ":id/password")] | (//android.widget.EditText)[2]',
     SIGN_IN_BUTTON: '//*[@text="Sign In" or @text="Login" or @content-desc="Sign In" or @content-desc="Login"]',
+    TODAY_SCHEDULE_BUTTON: '//*[contains(@text, "View Today") or contains(@content-desc, "View Today") or contains(@text, "Today\'s Schedule") or contains(@content-desc, "Today\'s Schedule")]',
     VISITS_BUTTON: '//*[contains(@text, "Visits") or contains(@content-desc, "Visits")]',
     SEARCH_INPUT: '//*[@resource-id="search" or @resource-id="searchInput" or contains(@resource-id, ":id/search") or contains(@resource-id, ":id/searchInput")]',
-    CLOCK_IN_BUTTON: '//*[@text="Clock In" or @content-desc="Clock In"]',
-    CLOCK_OUT_BUTTON: '//*[@text="Clock Out" or @content-desc="Clock Out"]',
+    CLOCK_IN_BUTTON: '//*[@text="Clock In" or @text="CLOCK IN" or @content-desc="Clock In" or @content-desc="CLOCK IN"]',
+    CLOCK_OUT_BUTTON: '//*[@text="Clock Out" or @text="CLOCK OUT" or @content-desc="Clock Out" or @content-desc="CLOCK OUT"]',
     CONFIRM_BUTTON: '//*[@text="Confirm" or @content-desc="Confirm"]',
+    OK_BUTTON: '//*[@text="OK" or @text="Ok" or @content-desc="OK" or @content-desc="Ok"]',
+    TIME_VERIFIED_LABEL: '//*[contains(@text, "Time Verified") or contains(@content-desc, "Time Verified")]',
+    SERVICE_VERIFIED_LABEL: '//*[contains(@text, "Service Verified") or contains(@content-desc, "Service Verified")]',
     TIME_VERIFIED: '//*[@text="Time Verified" or @content-desc="Time Verified"]',
     CHECKBOX: '//android.widget.CheckBox',
     SIGNATURE_ELEMENT: '//*[@resource-id="signature" or contains(@resource-id, ":id/signature")] | //android.view.View[contains(@content-desc, "signature") or contains(@content-desc, "Signature")]',
     SAVE_BUTTON: '//*[@text="Save" or @content-desc="Save"]',
-    OK_BUTTON: '//*[@text="OK" or @content-desc="OK"]',
 } as const;
 
 const DEFAULT_CONFIG = {
@@ -52,7 +55,7 @@ const DEFAULT_CONFIG = {
         path: process.env.APPIUM_PATH || '/',
     },
     ANDROID_DEVICE: {
-        deviceName: process.env.ANDROID_DEVICE_ID || process.env.ANDROID_DEVICE_NAME || 'emulator-5554',
+        deviceName: process.env.ANDROID_DEVICE_ID || process.env.ANDROID_DEVICE_NAME || 'Pixel 6a',
         appPackage: process.env.ANDROID_APP_PACKAGE || process.env.APP_PACKAGE || '',
         appActivity: process.env.ANDROID_APP_ACTIVITY || process.env.APP_ACTIVITY || '',
         appWaitActivity: process.env.ANDROID_APP_WAIT_ACTIVITY || process.env.APP_WAIT_ACTIVITY || '',
@@ -220,13 +223,19 @@ export class MobileApp {
 
     async login(username: string, password: string): Promise<void> {
         try {
+            if (!username.trim() || !password.trim()) {
+                throw new Error('Mobile username and password must be provided. Set MOBILE_USER_USERNAME and MOBILE_USER_PASSWORD in .env.');
+            }
+
             const userInput = await this.driver.$(MOBILE_SELECTORS.USERNAME_INPUT);
             await userInput.waitForDisplayed({ timeout: this.config.TIMEOUTS.elementDisplay });
+            await userInput.click();
             await userInput.clearValue();
             await userInput.setValue(username);
 
             const passInput = await this.driver.$(MOBILE_SELECTORS.PASSWORD_INPUT);
             await passInput.waitForDisplayed({ timeout: this.config.TIMEOUTS.elementDisplay });
+            await passInput.click();
             await passInput.clearValue();
             await passInput.setValue(password);
 
@@ -236,6 +245,12 @@ export class MobileApp {
             await signIn.waitForDisplayed({ timeout: this.config.TIMEOUTS.elementDisplay });
             await signIn.click();
             await this.wait(this.config.TIMEOUTS.postLoginWait);
+
+            const loginError = await this.driver.$('//*[contains(@content-desc, "Invalid") or contains(@text, "Invalid") or contains(@content-desc, "incorrect") or contains(@text, "incorrect")]');
+            if (await loginError.isExisting()) {
+                throw new Error('Mobile login was rejected: invalid username or password.');
+            }
+
             logger.success('Logged in');
         } catch (error) {
             logger.error('Login failed', error);
@@ -273,19 +288,26 @@ export class MobileApp {
 
     async findRecentVisit(empName: string, patientName: string, visitStartTime12H?: string): Promise<boolean> {
         try {
-            await this.openVisits().catch(() => {});
+            await this.openTodaysSchedule();
             await this.searchPatient(patientName).catch(() => {});
-            const card = await this.driver.$(getVisitCardSelector(patientName));
-            return await card.isExisting();
+            return Boolean(await this.findVisitCard(patientName, visitStartTime12H));
         } catch {
             return false;
         }
     }
 
-    async openVisit(patientName: string): Promise<void> {
+    async openTodaysSchedule(): Promise<void> {
+        const schedule = await this.driver.$(MOBILE_SELECTORS.TODAY_SCHEDULE_BUTTON);
+        if (await schedule.isExisting()) {
+            await schedule.waitForDisplayed({ timeout: this.config.TIMEOUTS.elementDisplay });
+            await schedule.click();
+            await this.wait(this.config.TIMEOUTS.mediumWait);
+        }
+    }
+
+    async openVisit(patientName: string, visitStartTime12H?: string): Promise<void> {
         try {
-            const visit = await this.driver.$(getVisitCardSelector(patientName));
-            await visit.waitForDisplayed({ timeout: this.config.TIMEOUTS.elementDisplay });
+            const visit = await this.findVisitCard(patientName, visitStartTime12H);
             await visit.click();
             await this.wait(this.config.TIMEOUTS.mediumWait);
             logger.success(`Opened ${patientName}`);
@@ -300,12 +322,18 @@ export class MobileApp {
             const btn = await this.driver.$(MOBILE_SELECTORS.CLOCK_IN_BUTTON);
             await btn.waitForDisplayed({ timeout: this.config.TIMEOUTS.elementDisplay });
             await btn.click();
-            await this.wait(this.config.TIMEOUTS.shortWait);
 
             const confirm = await this.driver.$(MOBILE_SELECTORS.CONFIRM_BUTTON);
-            if (await confirm.isExisting()) {
-                await confirm.click();
-            }
+            await confirm.waitForDisplayed({ timeout: this.config.TIMEOUTS.elementDisplay });
+            await confirm.click();
+
+            const ok = await this.driver.$(MOBILE_SELECTORS.OK_BUTTON);
+            await ok.waitForDisplayed({ timeout: this.config.TIMEOUTS.elementDisplay });
+            await ok.click();
+
+            await this.driver.$(MOBILE_SELECTORS.CLOCK_OUT_BUTTON).waitForDisplayed({
+                timeout: this.config.TIMEOUTS.elementDisplay,
+            });
             logger.success('Clock in done');
         } catch (error) {
             logger.error('Clock in failed', error);
@@ -313,17 +341,94 @@ export class MobileApp {
         }
     }
 
+    async selectTodayVisitAndClockIn(patientName: string, visitStartTime12H?: string): Promise<void> {
+        const deadline = Date.now() + 60000;
+        let visit;
+
+        while (Date.now() < deadline) {
+            const todaySchedule = await this.driver.$(MOBILE_SELECTORS.TODAY_SCHEDULE_BUTTON);
+            if (await todaySchedule.isDisplayed().catch(() => false)) {
+                await todaySchedule.click();
+                await this.wait(this.config.TIMEOUTS.mediumWait);
+            }
+
+            // The patient identifies the visit reliably; the displayed time can be
+            // rounded or formatted differently between the web and mobile apps.
+            visit = await this.findVisitCard(patientName);
+            if (!visit && visitStartTime12H) {
+                visit = await this.findVisitByTime(visitStartTime12H);
+            }
+            if (visit) {
+                break;
+            }
+
+            await this.wait(5000);
+        }
+
+        if (!visit || !(await visit.isDisplayed().catch(() => false))) {
+            throw new Error(`Today's visit was not found for patient: ${patientName}`);
+        }
+
+        const location = await visit.getLocation();
+        const size = await visit.getSize();
+        await this.driver.touchAction({
+            action: 'tap',
+            x: Math.round(location.x + size.width / 2),
+            y: Math.round(location.y + size.height / 2),
+        });
+
+        await this.clockIn();
+    }
+
+    private async findVisitByTime(startTime: string): Promise<any> {
+        const timeText = JSON.stringify(startTime);
+        const times = await this.driver.$$(
+            `//*[contains(@text, ${timeText}) or contains(@content-desc, ${timeText})]`,
+        );
+
+        let lastVisibleTime: any = null;
+        for (const time of times) {
+            if (await time.isDisplayed().catch(() => false)) {
+                lastVisibleTime = time;
+            }
+        }
+
+        return lastVisibleTime;
+    }
+
+    private async findVisitCard(
+        patientName: string,
+        visitStartTime12H?: string,
+    ): Promise<any> {
+        const nameParts = patientName.toLowerCase().split(/\s+/).filter(Boolean);
+        const nameText = JSON.stringify(patientName);
+        const cards = await this.driver.$$(`//*[contains(@text, ${nameText})]`);
+        const matches = [];
+
+        for (const card of cards) {
+            const text = (await card.getText().catch(() => '')).toLowerCase();
+            const hasPatient = nameParts.every((part) => text.includes(part));
+            if (await card.isDisplayed().catch(() => false) && hasPatient) {
+                matches.push(card);
+            }
+        }
+
+        return matches[matches.length - 1] || null;
+    }
+
     async clockOut(): Promise<void> {
         try {
             const btn = await this.driver.$(MOBILE_SELECTORS.CLOCK_OUT_BUTTON);
             await btn.waitForDisplayed({ timeout: this.config.TIMEOUTS.elementDisplay });
             await btn.click();
-            await this.wait(this.config.TIMEOUTS.shortWait);
 
             const confirm = await this.driver.$(MOBILE_SELECTORS.CONFIRM_BUTTON);
-            if (await confirm.isExisting()) {
-                await confirm.click();
-            }
+            await confirm.waitForDisplayed({ timeout: this.config.TIMEOUTS.elementDisplay });
+            await confirm.click();
+
+            await this.driver.$(MOBILE_SELECTORS.TIME_VERIFIED_LABEL).waitForDisplayed({
+                timeout: this.config.TIMEOUTS.elementDisplay,
+            });
             logger.success('Clock out done');
         } catch (error) {
             logger.error('Clock out failed', error);
@@ -339,20 +444,11 @@ export class MobileApp {
             logger.info('Starting client verification...');
 
             // Wait for time verified element
-            const timeVerified = await this.driver.$(MOBILE_SELECTORS.TIME_VERIFIED);
-            if (await timeVerified.isExisting()) {
-                await timeVerified.waitForDisplayed({
-                    timeout: this.config.TIMEOUTS.elementDisplay,
-                });
-            }
-
-            // Click all checkboxes
-            const checkboxes = await this.driver.$$(MOBILE_SELECTORS.CHECKBOX);
-            for (const checkbox of checkboxes) {
-                if (await checkbox.isExisting()) {
-                    await checkbox.click().catch(() => {
-                        /* checkbox might not be clickable */
-                    });
+            for (const selector of [MOBILE_SELECTORS.TIME_VERIFIED_LABEL, MOBILE_SELECTORS.SERVICE_VERIFIED_LABEL]) {
+                const checkbox = await this.driver.$(selector);
+                await checkbox.scrollIntoView();
+                if (await checkbox.isDisplayed()) {
+                    await checkbox.click();
                 }
             }
 
@@ -384,10 +480,10 @@ export class MobileApp {
     async saveButton(): Promise<void> {
         try {
             const saveBtn = await this.driver.$(MOBILE_SELECTORS.SAVE_BUTTON);
-            if (await saveBtn.isExisting()) {
-                await saveBtn.click();
-                await this.wait(this.config.TIMEOUTS.mediumWait);
-            }
+            await saveBtn.scrollIntoView();
+            await saveBtn.waitForDisplayed({ timeout: this.config.TIMEOUTS.elementDisplay });
+            await saveBtn.click();
+            await this.wait(this.config.TIMEOUTS.mediumWait);
             logger.success('Save button clicked');
         } catch (error) {
             logger.warning('Error clicking save button', error);
@@ -444,8 +540,8 @@ export class MobileApp {
         return this.handleInitialScreen();
     }
 
-    async clickVisit(patientName: string, _visitStartTime12H?: string): Promise<void> {
-        return this.openVisit(patientName);
+    async clickVisit(patientName: string, visitStartTime12H?: string): Promise<void> {
+        return this.openVisit(patientName, visitStartTime12H);
     }
 
     async clickClockIn(): Promise<void> {
@@ -464,7 +560,6 @@ function getAppiumCapabilities(
         platformName: 'Android',
         'appium:automationName': 'UiAutomator2',
         'appium:deviceName': config.deviceName,
-        'appium:platformVersion': process.env.ANDROID_PLATFORM_VERSION || '30',
         'appium:autoGrantPermissions': true,
         'appium:noReset': false,
         'appium:newCommandTimeout': 300,

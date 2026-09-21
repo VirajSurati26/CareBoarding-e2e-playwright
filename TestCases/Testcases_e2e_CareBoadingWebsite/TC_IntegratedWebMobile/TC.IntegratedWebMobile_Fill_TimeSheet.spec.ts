@@ -105,7 +105,7 @@ test.describe('Web to Mobile Visit Test', () => {
       console.log('Starting Appium server...');
       await mobileApp.startAppium();
       const appPath = process.env.ANDROID_APK_PATH;
-      const deviceId = process.env.ANDROID_DEVICE_ID || 'emulator-5554';
+      const deviceId = process.env.ANDROID_DEVICE_ID || 'Pixel 6a';
       if (!appPath) {
         throw new Error('ANDROID_APK_PATH is not set. Add ANDROID_APK_PATH to your .env file pointing to the APK file.');
       }

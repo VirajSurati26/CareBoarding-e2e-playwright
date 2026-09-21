@@ -25,8 +25,8 @@ class MobileAppLogger {
 const MOBILE_SELECTORS = {
     LANGUAGE_OR_CONTINUE: '//*[@text="Continue" or @text="English" or @content-desc="Continue" or @content-desc="English"]',
     ALLOW_PERMISSION: '//*[@text="Allow" or @text="While using the app" or @content-desc="Allow"]',
-    USERNAME_INPUT: '//*[@resource-id="username" or contains(@resource-id, ":id/username")] | (//android.widget.EditText)[1]',
-    PASSWORD_INPUT: '//*[@resource-id="password" or contains(@resource-id, ":id/password")] | (//android.widget.EditText)[2]',
+    USERNAME_INPUT: '//android.widget.EditText[@hint="Enter your email"] | //*[@resource-id="username" or contains(@resource-id, ":id/username")] | (//android.widget.EditText)[1]',
+    PASSWORD_INPUT: '//android.widget.EditText[@hint="Enter your password"] | //*[@resource-id="password" or contains(@resource-id, ":id/password")] | (//android.widget.EditText)[2]',
     SIGN_IN_BUTTON: '//*[@text="Sign In" or @text="Login" or @content-desc="Sign In" or @content-desc="Login"]',
     VISITS_BUTTON: '//*[contains(@text, "Visits") or contains(@content-desc, "Visits")]',
     SEARCH_INPUT: '//*[@resource-id="search" or @resource-id="searchInput" or contains(@resource-id, ":id/search") or contains(@resource-id, ":id/searchInput")]',
@@ -51,7 +51,7 @@ const DEFAULT_CONFIG = {
         path: process.env.APPIUM_PATH || '/',
     },
     ANDROID_DEVICE: {
-        deviceName: process.env.ANDROID_DEVICE_ID || process.env.ANDROID_DEVICE_NAME || 'emulator-5554',
+        deviceName: process.env.ANDROID_DEVICE_ID || process.env.ANDROID_DEVICE_NAME || 'Pixel 6a',
         appPackage: process.env.ANDROID_APP_PACKAGE || process.env.APP_PACKAGE || '',
         appActivity: process.env.ANDROID_APP_ACTIVITY || process.env.APP_ACTIVITY || '',
         appWaitActivity: process.env.ANDROID_APP_WAIT_ACTIVITY || process.env.APP_WAIT_ACTIVITY || '',
